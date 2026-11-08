@@ -8,14 +8,33 @@
  * 5. Scroll-controlled interactive 3D page turns
  */
 
+import { useState, useEffect } from 'react';
 import { VignetteOverlay } from './components/common/VignetteOverlay';
 import { CinematicSequence } from './scenes/CinematicSequence';
 import { ThreePageFlipPrototype } from './scenes/Storybook/ThreePageFlipPrototype';
+import { AdminApp } from './admin/AdminApp';
 
 export function App() {
-  const isPrototype =
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('prototype') === 'three';
+  const [currentPath, setCurrentPath] = useState(
+    typeof window !== 'undefined' ? window.location.pathname : '/'
+  );
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const searchParams =
+    typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const isPrototype = searchParams?.get('prototype') === 'three';
+  const isAdmin = currentPath.startsWith('/admin') || searchParams?.get('admin') === '1';
+
+  if (isAdmin) {
+    return <AdminApp />;
+  }
 
   if (isPrototype) {
     return (

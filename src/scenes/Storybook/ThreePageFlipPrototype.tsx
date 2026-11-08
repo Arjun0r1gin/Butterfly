@@ -21,6 +21,17 @@ import styles from './Storybook.module.css';
 
 export const SHEET_COUNT = 4;
 
+export interface SheetData {
+  mesh: THREE.Mesh;
+  uniforms: {
+    uProgress: { value: number };
+    uPageWidth: { value: number };
+    uPageHeight: { value: number };
+    uFrontTexture: { value: THREE.Texture };
+    uBackTexture: { value: THREE.Texture };
+  };
+}
+
 export interface ThreePageFlipPrototypeProps {
   progress?: number;          // Global reading/turn progress: 0.0 to 1.0 (maps across 4 sheets)
   turnProgress?: number;      // Explicit continuous turn progress: 0.0 to 4.0
@@ -46,12 +57,16 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
   coverProgress: externalCoverProgress = 1.0,
   showControls = true,
   className = '',
+  spreads: externalSpreads,
   onProgressChange,
 }: ThreePageFlipPrototypeProps) {
   const mountRef = useRef<HTMLDivElement>(null);
   const [internalProgress, setInternalProgress] = useState(0.0);
   const [internalCoverProgress, setInternalCoverProgress] = useState(1.0);
   const [isPlaying, setIsPlaying] = useState(false);
+
+  const sheetsRef = useRef<SheetData[]>([]);
+  const lBaseMatRef = useRef<THREE.MeshStandardMaterial | null>(null);
 
   const turnProgressRef = useRef<{ value: number }>({ value: 0.0 });
   const coverProgressRef = useRef<{ value: number }>({ value: 1.0 });
@@ -326,17 +341,6 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
     // 8. 4 Physical Blank Scrapbook Sheets (Leaves 0, 1, 2, 3)
     // Attached to spiral rings at x = 0, curling sequentially and accumulating on left!
     // -------------------------------------------------------------------------
-    interface SheetData {
-      mesh: THREE.Mesh;
-      uniforms: {
-        uProgress: { value: number };
-        uPageWidth: { value: number };
-        uPageHeight: { value: number };
-        uFrontTexture: { value: THREE.Texture };
-        uBackTexture: { value: THREE.Texture };
-      };
-    }
-
     const sheets: SheetData[] = [];
     const sheetsGroup = new THREE.Group();
     bookRootGroup.add(sheetsGroup);
@@ -468,6 +472,43 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
       sheetsGroup.add(mesh);
 
       sheets.push({ mesh, uniforms });
+    }
+
+    sheetsRef.current = sheets;
+    lBaseMatRef.current = lBaseMat;
+
+    // Load custom spread canvas textures from centralized content
+    let isDisposed = false;
+    const activeSpreads = externalSpreads || loadSavedContent().spreads;
+    if (activeSpreads && activeSpreads.length > 0) {
+      Promise.all(
+        activeSpreads.map(async (sp) => {
+          const leftTex = await createSpreadCanvasTexture(sp, 'left');
+          const rightTex = await createSpreadCanvasTexture(sp, 'right');
+          return { leftTex, rightTex };
+        })
+      ).then((spreadTexs) => {
+        if (isDisposed) return;
+        if (spreadTexs[0]?.leftTex && lBaseMatRef.current) {
+          lBaseMatRef.current.map = spreadTexs[0].leftTex;
+          lBaseMatRef.current.needsUpdate = true;
+        }
+        if (sheets[0]) {
+          if (spreadTexs[0]?.rightTex) sheets[0].uniforms.uFrontTexture.value = spreadTexs[0].rightTex;
+          if (spreadTexs[1]?.leftTex) sheets[0].uniforms.uBackTexture.value = spreadTexs[1].leftTex;
+        }
+        if (sheets[1]) {
+          if (spreadTexs[1]?.rightTex) sheets[1].uniforms.uFrontTexture.value = spreadTexs[1].rightTex;
+          if (spreadTexs[2]?.leftTex) sheets[1].uniforms.uBackTexture.value = spreadTexs[2].leftTex;
+        }
+        if (sheets[2]) {
+          if (spreadTexs[2]?.rightTex) sheets[2].uniforms.uFrontTexture.value = spreadTexs[2].rightTex;
+          if (spreadTexs[3]?.leftTex) sheets[2].uniforms.uBackTexture.value = spreadTexs[3].leftTex;
+        }
+        if (sheets[3]) {
+          if (spreadTexs[3]?.rightTex) sheets[3].uniforms.uFrontTexture.value = spreadTexs[3].rightTex;
+        }
+      });
     }
 
     // -------------------------------------------------------------------------
@@ -643,6 +684,9 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
     animate();
 
     return () => {
+      isDisposed = true;
+      sheetsRef.current = [];
+      lBaseMatRef.current = null;
       cancelAnimationFrame(renderAnimId);
       resizeObserver.disconnect();
       renderer.dispose();
@@ -651,6 +695,46 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
       }
     };
   }, []);
+
+  // Dynamically update textures when externalSpreads change
+  useEffect(() => {
+    if (!externalSpreads || sheetsRef.current.length === 0) return;
+    let isDisposed = false;
+
+    Promise.all(
+      externalSpreads.map(async (sp) => {
+        const leftTex = await createSpreadCanvasTexture(sp, 'left');
+        const rightTex = await createSpreadCanvasTexture(sp, 'right');
+        return { leftTex, rightTex };
+      })
+    ).then((spreadTexs) => {
+      if (isDisposed) return;
+      const sheets = sheetsRef.current;
+      if (spreadTexs[0]?.leftTex && lBaseMatRef.current) {
+        lBaseMatRef.current.map = spreadTexs[0].leftTex;
+        lBaseMatRef.current.needsUpdate = true;
+      }
+      if (sheets[0]) {
+        if (spreadTexs[0]?.rightTex) sheets[0].uniforms.uFrontTexture.value = spreadTexs[0].rightTex;
+        if (spreadTexs[1]?.leftTex) sheets[0].uniforms.uBackTexture.value = spreadTexs[1].leftTex;
+      }
+      if (sheets[1]) {
+        if (spreadTexs[1]?.rightTex) sheets[1].uniforms.uFrontTexture.value = spreadTexs[1].rightTex;
+        if (spreadTexs[2]?.leftTex) sheets[1].uniforms.uBackTexture.value = spreadTexs[2].leftTex;
+      }
+      if (sheets[2]) {
+        if (spreadTexs[2]?.rightTex) sheets[2].uniforms.uFrontTexture.value = spreadTexs[2].rightTex;
+        if (spreadTexs[3]?.leftTex) sheets[2].uniforms.uBackTexture.value = spreadTexs[3].leftTex;
+      }
+      if (sheets[3]) {
+        if (spreadTexs[3]?.rightTex) sheets[3].uniforms.uFrontTexture.value = spreadTexs[3].rightTex;
+      }
+    });
+
+    return () => {
+      isDisposed = true;
+    };
+  }, [externalSpreads]);
 
   return (
     <div className={`${styles.threePrototypeWrapper} ${className}`.trim()}>
