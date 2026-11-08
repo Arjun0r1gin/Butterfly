@@ -21,6 +21,16 @@ export const DEFAULT_TUNNEL_CONFIG: TunnelConfig = {
   swirlStrength: 0.35,
 };
 
+export const MOBILE_TUNNEL_CONFIG: TunnelConfig = {
+  ringCount: 16,
+  baseFlowersPerRing: 12,
+  tunnelDepth: 3000,
+  fov: 650,
+  initialRadius: 0,
+  maxRadius: 480,
+  swirlStrength: 0.35,
+};
+
 /**
  * Initializes particles in concentric swirling rings starting from the absolute center (r=0)
  * out to the outer corners, with randomized gravity and aerodynamic fluttering properties.
@@ -113,6 +123,9 @@ export function initializeTunnelParticles(
     }
   }
 
+  // Pre-sort ascending by depthOffset once so runtime depth-sorting is completely eliminated
+  particles.sort((a, b) => a.depthOffset - b.depthOffset);
+
   return particles;
 }
 
@@ -127,6 +140,47 @@ export interface ProjectedFlower {
 }
 
 /**
+ * Reusable zero-allocation particle object pool for locked 60 FPS rendering
+ */
+export class ProjectedFlowerPool {
+  public pool: ProjectedFlower[] = [];
+  public count: number = 0;
+
+  constructor(size: number = 380) {
+    for (let i = 0; i < size; i++) {
+      this.pool.push({
+        particle: null as any,
+        screenX: 0,
+        screenY: 0,
+        renderRadius: 0,
+        alpha: 0,
+        rotation: 0,
+        depthZ: 0,
+      });
+    }
+  }
+
+  public reset(): void {
+    this.count = 0;
+  }
+
+  public allocate(): ProjectedFlower {
+    if (this.count >= this.pool.length) {
+      this.pool.push({
+        particle: null as any,
+        screenX: 0,
+        screenY: 0,
+        renderRadius: 0,
+        alpha: 0,
+        rotation: 0,
+        depthZ: 0,
+      });
+    }
+    return this.pool[this.count++];
+  }
+}
+
+/**
  * Computes the 2D position, swirling vortex rotation, viewport expansion,
  * and gravity-driven cascading downward fall for every blossom.
  */
@@ -136,11 +190,13 @@ export function projectTunnelParticles(
   width: number,
   height: number,
   config: TunnelConfig = DEFAULT_TUNNEL_CONFIG,
-  timeSec: number = 0
+  timeSec: number = 0,
+  pool?: ProjectedFlowerPool
 ): ProjectedFlower[] {
   const centerX = width / 2;
   const centerY = height / 2;
-  const projected: ProjectedFlower[] = [];
+  if (pool) pool.reset();
+  const projected: ProjectedFlower[] = pool ? pool.pool : [];
 
   // Corner distance: ensures flowers reach beyond all 4 corners of the screen
   const maxCornerDist = Math.sqrt(centerX * centerX + centerY * centerY) * 1.15;
@@ -221,19 +277,28 @@ export function projectTunnelParticles(
     // Natural orientation + spin + fall tumble
     const rotation = p.rotation + timeSec * p.rotationSpeed + fallRotationOffset;
 
-    projected.push({
-      particle: p,
-      screenX,
-      screenY,
-      renderRadius,
-      alpha,
-      rotation,
-      depthZ: p.depthOffset,
-    });
+    if (pool) {
+      const item = pool.allocate();
+      item.particle = p;
+      item.screenX = screenX;
+      item.screenY = screenY;
+      item.renderRadius = renderRadius;
+      item.alpha = alpha;
+      item.rotation = rotation;
+      item.depthZ = p.depthOffset;
+    } else {
+      projected.push({
+        particle: p,
+        screenX,
+        screenY,
+        renderRadius,
+        alpha,
+        rotation,
+        depthZ: p.depthOffset,
+      });
+    }
   }
 
-  // Painter's algorithm: sort ascending by depth so foreground blossoms render over background
-  projected.sort((a, b) => a.depthZ - b.depthZ);
-
+  // Particles are already pre-sorted by depthOffset, so order is strictly maintained!
   return projected;
 }

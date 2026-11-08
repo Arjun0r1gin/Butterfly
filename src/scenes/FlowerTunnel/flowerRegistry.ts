@@ -177,6 +177,8 @@ export interface LoadedFlowerSprite {
   canvas: HTMLCanvasElement;
   width: number;
   height: number;
+  sqrtAspect: number;
+  invSqrtAspect: number;
 }
 
 export class FlowerAssetCache {
@@ -192,10 +194,14 @@ export class FlowerAssetCache {
     return FlowerAssetCache.instance;
   }
 
+  public isReady(): boolean {
+    return this.isLoaded;
+  }
+
   /**
    * Preloads and decodes all 16 flower assets before animation starts
    */
-  public async loadAll(targetResolution = 512): Promise<LoadedFlowerSprite[]> {
+  public async loadAll(targetResolution = 384): Promise<LoadedFlowerSprite[]> {
     if (this.isLoaded) {
       return Array.from(this.cache.values());
     }
@@ -239,6 +245,8 @@ export class FlowerAssetCache {
         // Create high-fidelity offscreen canvas sprite
         const spriteCanvas = document.createElement('canvas');
         const aspect = def.aspectRatio;
+        const sqrtAspect = Math.sqrt(aspect);
+        const invSqrtAspect = 1.0 / sqrtAspect;
         const sw = targetRes;
         const sh = Math.round(targetRes / aspect);
         spriteCanvas.width = sw;
@@ -247,7 +255,7 @@ export class FlowerAssetCache {
         const ctx = spriteCanvas.getContext('2d');
         if (ctx) {
           ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
+          ctx.imageSmoothingQuality = 'medium';
           ctx.drawImage(img, 0, 0, sw, sh);
         }
 
@@ -257,6 +265,8 @@ export class FlowerAssetCache {
           canvas: spriteCanvas,
           width: sw,
           height: sh,
+          sqrtAspect,
+          invSqrtAspect,
         };
 
         this.cache.set(def.id, sprite);
@@ -276,12 +286,17 @@ export class FlowerAssetCache {
           ctx.arc(targetRes / 2, targetRes / 2, targetRes * 0.45, 0, Math.PI * 2);
           ctx.fill();
         }
+        const aspect = def.aspectRatio || 1;
+        const sqrtAspect = Math.sqrt(aspect);
+        const invSqrtAspect = 1.0 / sqrtAspect;
         const fallback: LoadedFlowerSprite = {
           def,
           image: img,
           canvas: fallbackCanvas,
           width: targetRes,
           height: targetRes,
+          sqrtAspect,
+          invSqrtAspect,
         };
         this.cache.set(def.id, fallback);
         resolve(fallback);

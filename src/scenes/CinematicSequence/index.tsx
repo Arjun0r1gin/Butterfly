@@ -19,6 +19,7 @@ import { SceneContainer } from '../../components/common/SceneContainer';
 import { SCENE_IDS } from '../../utils/constants';
 import { assetUrl } from '../../utils/assets';
 import { FlowerTunnel } from '../FlowerTunnel';
+import { FlowerAssetCache } from '../FlowerTunnel/flowerRegistry';
 import { Butterfly, ButterflyGlitterTrail } from '../../components/Butterfly';
 import { OpeningEnvelope } from '../OpeningEnvelope/OpeningEnvelope';
 import { STORYBOOK_SPREADS } from '../Storybook/storybookData';
@@ -241,6 +242,32 @@ export const CinematicSequence = memo(function CinematicSequence({
   const isLandedOnTipRef = useRef(false);
   const applyFrameRef = useRef<((p: number) => void) | null>(null);
 
+  // Decoupled memory ref for butterfly screen position: allows ButterflyGlitterTrail
+  // to query position with zero DOM reads and zero layout recalculations/reflows
+  const butterflyPosRef = useRef<{ x: number; y: number; opacity: number } | null>({
+    x: 0,
+    y: 0,
+    opacity: 0,
+  });
+
+  // Background preload & readiness tracker for flower assets
+  const [isFlowerAssetsReady, setIsFlowerAssetsReady] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return FlowerAssetCache.getInstance().isReady();
+  });
+
+  useEffect(() => {
+    if (!isFlowerAssetsReady) {
+      FlowerAssetCache.getInstance()
+        .loadAll(384)
+        .then(() => setIsFlowerAssetsReady(true))
+        .catch((err) => {
+          console.error('Failed to preload flower assets:', err);
+          setIsFlowerAssetsReady(true);
+        });
+    }
+  }, [isFlowerAssetsReady]);
+
   const handleEnvelopeOpen = useCallback(() => {
     setIsEnvelopeOpened(true);
   }, []);
@@ -312,8 +339,17 @@ export const CinematicSequence = memo(function CinematicSequence({
         bf.style.left = `${startX}vw`;
         bf.style.top = `${startY}vh`;
         bf.style.transform = `translate(-50%, -50%) scale(${scale}) rotate(${tilt}deg)`;
+
+        if (butterflyPosRef.current) {
+          butterflyPosRef.current.x = (startX / 100) * window.innerWidth;
+          butterflyPosRef.current.y = (startY / 100) * window.innerHeight;
+          butterflyPosRef.current.opacity = emergeProgress;
+        }
       } else {
         bf.style.opacity = '0';
+        if (butterflyPosRef.current) {
+          butterflyPosRef.current.opacity = 0;
+        }
       }
     }
 
@@ -372,6 +408,12 @@ export const CinematicSequence = memo(function CinematicSequence({
       bf.style.left = `${bfState.x}vw`;
       bf.style.top = `${bfState.y}vh`;
       bf.style.transform = `translate(-50%, -50%) scale(${bfState.scale}) rotate(${bfState.rot}deg)`;
+
+      if (butterflyPosRef.current) {
+        butterflyPosRef.current.x = (bfState.x / 100) * window.innerWidth;
+        butterflyPosRef.current.y = (bfState.y / 100) * window.innerHeight;
+        butterflyPosRef.current.opacity = isWorldRevealedRef.current ? 1 : 0;
+      }
 
       // Hover Wing Mode: gentle hovering while landed on closed cover, open book, or rocket
       const shouldHover = (p >= 0.3886 && p <= 0.42) || (p >= 0.48 && p <= 0.78) || p >= 0.96;
@@ -684,12 +726,14 @@ export const CinematicSequence = memo(function CinematicSequence({
           <OpeningEnvelope
             onOpen={handleEnvelopeOpen}
             onFinished={handleEnvelopeFinished}
+            isReady={isFlowerAssetsReady}
           />
         )}
 
         {/* Layer 3.8: Golden Glitter Trail Following Butterfly Flight Path */}
         <ButterflyGlitterTrail
           butterflyRef={butterflyActorRef}
+          butterflyPosRef={butterflyPosRef}
           isHovering={isHoveringWing}
         />
 

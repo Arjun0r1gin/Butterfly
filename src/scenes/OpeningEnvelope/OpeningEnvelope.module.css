@@ -72,6 +72,23 @@
   transition: transform 0.25s ease;
 }
 
+.pendingPrompt .promptText {
+  animation: pendingShimmer 1.4s ease-in-out infinite;
+  color: #8c5228;
+}
+
+@keyframes pendingShimmer {
+  0%, 100% {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.02);
+    text-shadow: 0 0 12px rgba(229, 189, 117, 0.6);
+  }
+}
+
 .promptText {
   font-family: 'Caveat', 'Playfair Display', cursive, serif;
   font-size: clamp(1.45rem, 2.6vw, 1.95rem);

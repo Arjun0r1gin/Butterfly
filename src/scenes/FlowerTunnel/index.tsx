@@ -16,6 +16,8 @@ import {
   initializeTunnelParticles,
   projectTunnelParticles,
   DEFAULT_TUNNEL_CONFIG,
+  MOBILE_TUNNEL_CONFIG,
+  ProjectedFlowerPool,
 } from './tunnelMath';
 import { createTunnelMasterTimeline } from './timeline';
 import type { SequenceTimelineState, FlowerParticle } from './types';
@@ -55,6 +57,10 @@ export const FlowerTunnel = memo(function FlowerTunnel({
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const isTabVisibleRef = useRef<boolean>(true);
+  const poolRef = useRef<ProjectedFlowerPool>(new ProjectedFlowerPool(380));
+
+  const isStartedRef = useRef(isStarted);
+  isStartedRef.current = isStarted;
 
   // Synchronize playback with isStarted state
   useEffect(() => {
@@ -100,21 +106,24 @@ export const FlowerTunnel = memo(function FlowerTunnel({
     const renderer = new FlowerTunnelRenderer(canvas);
     rendererRef.current = renderer;
 
+    const isMobile = window.innerWidth <= 768;
+    const config = isMobile ? MOBILE_TUNNEL_CONFIG : DEFAULT_TUNNEL_CONFIG;
+
     // 2. Preload and decode all 16 watercolor flower assets
     const assetCache = FlowerAssetCache.getInstance();
-    assetCache.loadAll(512).then((sprites) => {
+    assetCache.loadAll(384).then((sprites) => {
       if (isDisposed) return;
       spritesRef.current = sprites;
 
-      // 3. Pre-allocate 3D Tunnel Particles
-      const particles = initializeTunnelParticles(DEFAULT_TUNNEL_CONFIG, sprites.length);
+      // 3. Pre-allocate 3D Tunnel Particles (pre-sorted by depth)
+      const particles = initializeTunnelParticles(config, sprites.length);
       particlesRef.current = particles;
 
       // 4. Build GSAP Choreographed Master Timeline
       const startTime = performance.now();
       const tl = createTunnelMasterTimeline(stateRef.current, {
-        config: DEFAULT_TUNNEL_CONFIG,
-        paused: !isStarted,
+        config,
+        paused: !isStartedRef.current,
         onUpdate: (currentState) => {
           // Direct DOM style updates for opening pastel background (fades out behind opaque flower blanket)
           if (backgroundRef.current) {
@@ -137,6 +146,11 @@ export const FlowerTunnel = memo(function FlowerTunnel({
       });
 
       timelineRef.current = tl;
+
+      // If user clicked while assets were preloading, trigger play immediately!
+      if (isStartedRef.current) {
+        tl.play();
+      }
 
       // Handle test, stage snapshot, and automated benchmark URL parameters
       const searchParams = new URLSearchParams(window.location.search);
@@ -250,20 +264,23 @@ export const FlowerTunnel = memo(function FlowerTunnel({
               (stateRef.current.flowerClusterProgress > 0.01 || stateRef.current.transitionProgress > 0.01) &&
               spritesRef.current.length > 0
             ) {
-              const projected = projectTunnelParticles(
+              const pool = poolRef.current;
+              projectTunnelParticles(
                 particlesRef.current,
                 stateRef.current,
                 width,
                 height,
-                DEFAULT_TUNNEL_CONFIG,
-                elapsedSec
+                config,
+                elapsedSec,
+                pool
               );
 
               renderer.render(
-                projected,
+                pool.pool,
                 spritesRef.current,
                 stateRef.current.transitionProgress,
-                elapsedSec
+                elapsedSec,
+                pool.count
               );
             } else {
               renderer.clear();

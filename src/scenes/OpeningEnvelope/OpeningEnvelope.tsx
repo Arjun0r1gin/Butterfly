@@ -14,19 +14,21 @@ import styles from './OpeningEnvelope.module.css';
 export interface OpeningEnvelopeProps {
   onOpen: () => void;
   onFinished?: () => void;
+  isReady?: boolean;
   className?: string;
 }
 
 export const OpeningEnvelope: React.FC<OpeningEnvelopeProps> = ({
   onOpen,
   onFinished,
+  isReady = true,
   className = '',
 }) => {
+  const [isPending, setIsPending] = useState(false);
   const [isOpening, setIsOpening] = useState(false);
   const [isFinished, setIsFinished] = useState(false);
 
-  const handleOpen = useCallback(() => {
-    if (isOpening || isFinished) return;
+  const startOpening = useCallback(() => {
     setIsOpening(true);
 
     // Trigger flower tunnel immediately
@@ -39,7 +41,25 @@ export const OpeningEnvelope: React.FC<OpeningEnvelopeProps> = ({
         onFinished();
       }
     }, 800);
-  }, [isOpening, isFinished, onOpen, onFinished]);
+  }, [onOpen, onFinished]);
+
+  // If user clicked while assets were preloading, trigger opening the moment isReady turns true
+  React.useEffect(() => {
+    if (isPending && isReady && !isOpening) {
+      startOpening();
+    }
+  }, [isPending, isReady, isOpening, startOpening]);
+
+  const handleOpen = useCallback(() => {
+    if (isOpening || isFinished) return;
+
+    if (!isReady) {
+      setIsPending(true);
+      return;
+    }
+
+    startOpening();
+  }, [isOpening, isFinished, isReady, startOpening]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -76,8 +96,10 @@ export const OpeningEnvelope: React.FC<OpeningEnvelopeProps> = ({
         </div>
 
         {/* Instruction underneath */}
-        <div className={styles.promptWrapper}>
-          <span className={styles.promptText}>Click to Open ♡</span>
+        <div className={`${styles.promptWrapper} ${isPending ? styles.pendingPrompt : ''}`}>
+          <span className={styles.promptText}>
+            {isPending ? 'Opening your story... ♡' : 'Click to Open ♡'}
+          </span>
           <div className={styles.promptDecor} aria-hidden="true">
             <span className={styles.promptArrow}>‹</span>
             <span className={styles.promptLine} />

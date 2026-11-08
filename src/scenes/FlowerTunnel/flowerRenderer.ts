@@ -67,8 +67,9 @@ export class FlowerTunnelRenderer {
   public updateDimensions(): { width: number; height: number } {
     if (typeof window === 'undefined') return { width: 0, height: 0 };
 
-    // Cap DPR at 2.0 to protect mobile GPU fill-rates
-    this.dpr = Math.min(window.devicePixelRatio || 1, 2);
+    // Cap DPR adaptively: 1.5 on mobile to protect GPU fill-rate, 2.0 on desktop
+    const isMobile = window.innerWidth <= 768;
+    this.dpr = isMobile ? Math.min(window.devicePixelRatio || 1, 1.5) : Math.min(window.devicePixelRatio || 1, 2.0);
 
     const rect = this.canvas.getBoundingClientRect();
     const displayWidth = Math.max(1, Math.floor(rect.width));
@@ -87,12 +88,14 @@ export class FlowerTunnelRenderer {
   /**
    * Renders a single frame from depth-sorted projected flowers
    * using cached pre-rendered watercolor flower sprites.
+   * Direct affine matrix transforms with ZERO ctx.save()/ctx.restore() overhead.
    */
   public render(
     projectedFlowers: ProjectedFlower[],
     sprites: LoadedFlowerSprite[],
     petalAlpha: number = 0,
-    timeSec: number = 0
+    timeSec: number = 0,
+    activeCount?: number
   ): void {
     const ctx = this.ctx;
     const dpr = this.dpr;
@@ -105,35 +108,43 @@ export class FlowerTunnelRenderer {
     if (spriteCount === 0) return;
 
     ctx.imageSmoothingEnabled = true;
-    ctx.imageSmoothingQuality = 'high';
+    ctx.imageSmoothingQuality = 'medium';
 
-    // 1. Render depth-sorted tunnel flowers
-    const flowerCount = projectedFlowers.length;
+    // 1. Render depth-sorted tunnel flowers with direct affine matrix transforms
+    const flowerCount = activeCount !== undefined ? activeCount : projectedFlowers.length;
     for (let i = 0; i < flowerCount; i++) {
       const flower = projectedFlowers[i];
       const spriteIndex = flower.particle.varietyIndex % spriteCount;
       const sprite = sprites[spriteIndex];
 
       const r = flower.renderRadius;
-      const aspect = sprite.def.aspectRatio;
-      // Width and height adjusted to preserve authentic blossom proportions
-      const drawWidth = r * 2 * Math.sqrt(aspect);
-      const drawHeight = (r * 2) / Math.sqrt(aspect);
+      const drawWidth = r * 2 * sprite.sqrtAspect;
+      const drawHeight = r * 2 * sprite.invSqrtAspect;
+      const hw = drawWidth / 2;
+      const hh = drawHeight / 2;
 
-      ctx.save();
+      const rad = flower.rotation;
+      const cos = Math.cos(rad);
+      const sin = Math.sin(rad);
+
+      // Direct matrix transform with baked-in DPR: eliminates 600 ctx.save()/ctx.restore() per frame!
+      ctx.setTransform(
+        cos * dpr,
+        sin * dpr,
+        -sin * dpr,
+        cos * dpr,
+        flower.screenX * dpr,
+        flower.screenY * dpr
+      );
       ctx.globalAlpha = flower.alpha;
-      ctx.translate(flower.screenX, flower.screenY);
-      ctx.rotate(flower.rotation);
 
       ctx.drawImage(
         sprite.canvas,
-        -drawWidth / 2,
-        -drawHeight / 2,
+        -hw,
+        -hh,
         drawWidth,
         drawHeight
       );
-
-      ctx.restore();
     }
 
     // 2. Render drifting soft petals during climax / exit transition (ref_08_destination)
@@ -144,7 +155,6 @@ export class FlowerTunnelRenderer {
       for (let p = 0; p < this.petals.length; p++) {
         const petal = this.petals[p];
         const sprite = sprites[petal.varietyIndex % spriteCount];
-        const aspect = sprite.def.aspectRatio;
 
         const totalY = petal.yOffset + timeSec * petal.fallSpeed;
         const currentY = (totalY % (h + 120)) - 60;
@@ -152,18 +162,28 @@ export class FlowerTunnelRenderer {
         const rotation = petal.initialRotation + timeSec * petal.rotationSpeed;
 
         const baseSize = 140 * petal.scale;
-        const drawW = baseSize * Math.sqrt(aspect);
-        const drawH = baseSize / Math.sqrt(aspect);
+        const drawW = baseSize * sprite.sqrtAspect;
+        const drawH = baseSize * sprite.invSqrtAspect;
 
-        ctx.save();
+        const rad = rotation;
+        const cos = Math.cos(rad);
+        const sin = Math.sin(rad);
+
+        ctx.setTransform(
+          cos * dpr,
+          sin * dpr,
+          -sin * dpr,
+          cos * dpr,
+          currentX * dpr,
+          currentY * dpr
+        );
         ctx.globalAlpha = petalAlpha * 0.85;
-        ctx.translate(currentX, currentY);
-        ctx.rotate(rotation);
-
         ctx.drawImage(sprite.canvas, -drawW / 2, -drawH / 2, drawW, drawH);
-        ctx.restore();
       }
     }
+
+    // Reset transform matrix cleanly at end of frame
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
   public clear(): void {

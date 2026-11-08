@@ -10,6 +10,7 @@ import styles from './ButterflyGlitterTrail.module.css';
 
 export interface ButterflyGlitterTrailProps {
   butterflyRef: React.RefObject<HTMLDivElement | null>;
+  butterflyPosRef?: React.RefObject<{ x: number; y: number; opacity: number } | null>;
   isHovering?: boolean;
   className?: string;
 }
@@ -38,6 +39,7 @@ const GOLD_PALETTE = [
 
 export const ButterflyGlitterTrail = memo(function ButterflyGlitterTrail({
   butterflyRef,
+  butterflyPosRef,
   isHovering = false,
   className = '',
 }: ButterflyGlitterTrailProps) {
@@ -71,71 +73,79 @@ export const ButterflyGlitterTrail = memo(function ButterflyGlitterTrail({
     const renderLoop = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // Check current butterfly screen position
-      const bfElem = butterflyRef.current;
-      if (bfElem) {
-        const style = window.getComputedStyle(bfElem);
-        const opacity = parseFloat(style.opacity || '1');
+      // Check current butterfly screen position without layout thrashing
+      let curX = 0;
+      let curY = 0;
+      let opacity = 0;
 
+      if (butterflyPosRef && butterflyPosRef.current) {
+        curX = butterflyPosRef.current.x;
+        curY = butterflyPosRef.current.y;
+        opacity = butterflyPosRef.current.opacity;
+      } else if (butterflyRef.current) {
+        const bfElem = butterflyRef.current;
+        opacity = parseFloat(bfElem.style.opacity || '1');
         if (opacity > 0.08) {
           const rect = bfElem.getBoundingClientRect();
-          const curX = rect.left + rect.width / 2;
-          const curY = rect.top + rect.height / 2;
+          curX = rect.left + rect.width / 2;
+          curY = rect.top + rect.height / 2;
+        }
+      }
 
-          if (curX > -50 && curX < width + 50 && curY > -50 && curY < height + 50) {
-            if (lastPosRef.current) {
-              const dx = curX - lastPosRef.current.x;
-              const dy = curY - lastPosRef.current.y;
-              const dist = Math.hypot(dx, dy);
+      if (opacity > 0.08) {
+        if (curX > -50 && curX < width + 50 && curY > -50 && curY < height + 50) {
+          if (lastPosRef.current) {
+            const dx = curX - lastPosRef.current.x;
+            const dy = curY - lastPosRef.current.y;
+            const dist = Math.hypot(dx, dy);
 
-              if (dist > 1.2) {
-                // Butterfly is actively flying: spawn smooth continuous trail
-                const spawnCount = Math.min(4, Math.max(1, Math.floor(dist / 6.5)));
-                for (let i = 0; i < spawnCount; i++) {
-                  if (particlesRef.current.length >= maxParticles) break;
+            if (dist > 1.2) {
+              // Butterfly is actively flying: spawn smooth continuous trail
+              const spawnCount = Math.min(4, Math.max(1, Math.floor(dist / 6.5)));
+              for (let i = 0; i < spawnCount; i++) {
+                if (particlesRef.current.length >= maxParticles) break;
 
-                  const t = (i + Math.random()) / spawnCount;
-                  const px = lastPosRef.current.x + dx * t + (Math.random() - 0.5) * 14;
-                  const py = lastPosRef.current.y + dy * t + (Math.random() - 0.5) * 12;
+                const t = (i + Math.random()) / spawnCount;
+                const px = lastPosRef.current.x + dx * t + (Math.random() - 0.5) * 14;
+                const py = lastPosRef.current.y + dy * t + (Math.random() - 0.5) * 12;
 
-                  particlesRef.current.push({
-                    x: px,
-                    y: py,
-                    vx: (Math.random() - 0.5) * 0.7,
-                    vy: -0.25 + (Math.random() - 0.5) * 0.5,
-                    size: 1.5 + Math.random() * 2.8,
-                    maxLife: 38 + Math.floor(Math.random() * 28),
-                    age: 0,
-                    color: GOLD_PALETTE[Math.floor(Math.random() * GOLD_PALETTE.length)],
-                    isStar: Math.random() < 0.22,
-                    rotation: Math.random() * Math.PI,
-                    rotSpeed: (Math.random() - 0.5) * 0.09,
-                  });
-                }
-              } else if (isHovering && Math.random() < 0.12) {
-                // Occasional subtle glint when hovering near book or rocket
-                if (particlesRef.current.length < maxParticles) {
-                  particlesRef.current.push({
-                    x: curX + (Math.random() - 0.5) * 20,
-                    y: curY + (Math.random() - 0.5) * 16,
-                    vx: (Math.random() - 0.5) * 0.4,
-                    vy: -0.15 + (Math.random() - 0.5) * 0.3,
-                    size: 1.8 + Math.random() * 1.8,
-                    maxLife: 32 + Math.floor(Math.random() * 20),
-                    age: 0,
-                    color: GOLD_PALETTE[Math.floor(Math.random() * GOLD_PALETTE.length)],
-                    isStar: Math.random() < 0.35,
-                    rotation: Math.random() * Math.PI,
-                    rotSpeed: (Math.random() - 0.5) * 0.07,
-                  });
-                }
+                particlesRef.current.push({
+                  x: px,
+                  y: py,
+                  vx: (Math.random() - 0.5) * 0.7,
+                  vy: -0.25 + (Math.random() - 0.5) * 0.5,
+                  size: 1.5 + Math.random() * 2.8,
+                  maxLife: 38 + Math.floor(Math.random() * 28),
+                  age: 0,
+                  color: GOLD_PALETTE[Math.floor(Math.random() * GOLD_PALETTE.length)],
+                  isStar: Math.random() < 0.22,
+                  rotation: Math.random() * Math.PI,
+                  rotSpeed: (Math.random() - 0.5) * 0.09,
+                });
+              }
+            } else if (isHovering && Math.random() < 0.12) {
+              // Occasional subtle glint when hovering near book or rocket
+              if (particlesRef.current.length < maxParticles) {
+                particlesRef.current.push({
+                  x: curX + (Math.random() - 0.5) * 20,
+                  y: curY + (Math.random() - 0.5) * 16,
+                  vx: (Math.random() - 0.5) * 0.4,
+                  vy: -0.15 + (Math.random() - 0.5) * 0.3,
+                  size: 1.8 + Math.random() * 1.8,
+                  maxLife: 32 + Math.floor(Math.random() * 20),
+                  age: 0,
+                  color: GOLD_PALETTE[Math.floor(Math.random() * GOLD_PALETTE.length)],
+                  isStar: Math.random() < 0.35,
+                  rotation: Math.random() * Math.PI,
+                  rotSpeed: (Math.random() - 0.5) * 0.07,
+                });
               }
             }
-            lastPosRef.current = { x: curX, y: curY };
           }
-        } else {
-          lastPosRef.current = null;
+          lastPosRef.current = { x: curX, y: curY };
         }
+      } else {
+        lastPosRef.current = null;
       }
 
       // Update and render all active glitter particles
