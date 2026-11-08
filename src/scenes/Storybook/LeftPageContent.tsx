@@ -1,6 +1,7 @@
 /**
  * BUTTERFLY — Storybook Left Page Component
- * Renders photos with washi tape, stamps, stickers, and scrapbook memories.
+ * Renders authentic handmade scrapbook photos with washi tape, stamps,
+ * pressed flowers, stickers, and handwritten captions.
  */
 
 import { memo } from 'react';
@@ -16,37 +17,48 @@ export const LeftPageContent = memo(function LeftPageContent({
 }: LeftPageContentProps) {
   return (
     <div className={styles.pageInner} data-side="left">
-      {/* Background Parchment & Floral Border */}
+      {/* Background Warm Aged Parchment */}
       <img
-        src="/storybook/page_template_left.png"
+        src="/storybook/studio_page_blank_left.jpg"
         alt=""
         className={styles.pageTemplateBg}
         aria-hidden="true"
       />
 
       <div className={styles.leftPageContent}>
-        {/* Photo Memories Grid */}
+        {/* Photo Memories Container */}
         <div className={styles.photosContainer}>
           {pageData.photos.map((photo) => (
             <div
               key={photo.id}
-              className={`${styles.polaroid} ${styles[photo.tapeStyle]}`}
+              className={`${styles.polaroid} ${styles[photo.tapeStyle] || ''}`}
               style={{
                 transform: `rotate(${photo.rotationDeg}deg)`,
               }}
             >
               {/* Washi Tape Strip */}
-              <div className={`${styles.washiTape} ${styles[photo.tapeStyle]}`} />
-
-              {/* Photo Frame */}
-              <div
-                className={styles.photoCanvas}
-                style={{ background: photo.bgGradient }}
-              >
-                <span className={styles.photoDoodle}>{photo.doodle || '📷'}</span>
+              <div className={`${styles.washiTape} ${styles[photo.tapeStyle] || ''}`}>
+                {photo.tapeStyle === 'washi-gold' ? (
+                  <img src="/storybook/assets/washi_gingham.png" alt="" className={styles.washiTapeImg} />
+                ) : (
+                  <img src="/storybook/assets/washi_pink_floral.png" alt="" className={styles.washiTapeImg} />
+                )}
               </div>
 
-              {/* Polaroid Caption */}
+              {/* Photo Frame */}
+              <div className={styles.photoCanvas}>
+                {photo.customUrl ? (
+                  <img
+                    src={photo.customUrl}
+                    alt={photo.title}
+                    className={styles.photoImg}
+                  />
+                ) : (
+                  <span className={styles.photoDoodle}>{photo.doodle || '📷'}</span>
+                )}
+              </div>
+
+              {/* Polaroid Caption in Black Ink Handwriting */}
               <div className={styles.polaroidCaption}>
                 <span className={styles.polaroidTitle}>{photo.title}</span>
                 {photo.date && (
@@ -57,33 +69,42 @@ export const LeftPageContent = memo(function LeftPageContent({
           ))}
         </div>
 
-        {/* Scrapbook Stickers & Stamps */}
+        {/* Scrapbook Stickers & Dried Flowers Layer */}
         <div className={styles.stickersLayer}>
           {pageData.stickers.map((st) => (
             <div
               key={st.id}
-              className={`${styles.sticker} ${styles[`sticker_${st.type}`]}`}
+              className={`${styles.sticker} ${styles[`sticker_${st.type}`] || ''}`}
               style={{
                 left: `${st.x}%`,
                 top: `${st.y}%`,
                 transform: `translate(-50%, -50%) rotate(${st.rotationDeg}deg)`,
               }}
             >
-              {st.label}
+              {st.customUrl ? (
+                <img
+                  src={st.customUrl}
+                  alt={st.label || ''}
+                  className={styles.stickerImg}
+                />
+              ) : (
+                st.label
+              )}
             </div>
           ))}
         </div>
 
         {/* Handwritten Notes */}
-        <div className={styles.handwrittenNotes}>
-          {pageData.handwrittenNotes.map((note, idx) => (
-            <p key={idx} className={styles.handwrittenLine}>
-              {note}
-            </p>
-          ))}
-        </div>
+        {pageData.handwrittenNotes && pageData.handwrittenNotes.length > 0 && (
+          <div className={styles.handwrittenNotes}>
+            {pageData.handwrittenNotes.map((note, idx) => (
+              <p key={idx} className={styles.handwrittenLine}>
+                {note}
+              </p>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
 });
-

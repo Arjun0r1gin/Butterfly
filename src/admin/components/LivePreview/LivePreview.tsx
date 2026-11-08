@@ -17,7 +17,7 @@ export interface LivePreviewProps {
 export const LivePreview: React.FC<LivePreviewProps> = ({ content }) => {
   const [previewMode, setPreviewMode] = useState<'book' | 'final'>('book');
   const [turnProgress, setTurnProgress] = useState(0.0);
-  const [coverProgress, setCoverProgress] = useState(1.0);
+  const coverProgress = 1.0;
   const [autoPlay, setAutoPlay] = useState(false);
 
   // Auto-play scrubber

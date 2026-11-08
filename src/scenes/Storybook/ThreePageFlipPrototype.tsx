@@ -166,6 +166,7 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.innerHTML = '';
     container.appendChild(renderer.domElement);
 
@@ -194,6 +195,7 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
 
     const loadTexture = (path: string) => {
       const tex = loader.load(path);
+      tex.colorSpace = THREE.SRGBColorSpace;
       tex.minFilter = THREE.LinearMipmapLinearFilter;
       tex.magFilter = THREE.LinearFilter;
       tex.anisotropy = maxAnisotropy;
@@ -245,11 +247,13 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
     const backCoverHalfH = COVER_H;     // 442
 
     const texCoverLeft = texCover.clone();
+    texCoverLeft.colorSpace = THREE.SRGBColorSpace;
     texCoverLeft.repeat.set(0.5, 1.0);
     texCoverLeft.offset.set(0.0, 0.0);
     texCoverLeft.needsUpdate = true;
 
     const texCoverRight = texCover.clone();
+    texCoverRight.colorSpace = THREE.SRGBColorSpace;
     texCoverRight.repeat.set(0.5, 1.0);
     texCoverRight.offset.set(0.5, 0.0);
     texCoverRight.needsUpdate = true;
@@ -402,7 +406,7 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
             p.x = -x;
             p.y = y;
             p.z = 0.0;
-            n = vec3(0.0, 0.0, -1.0);
+            n = vec3(0.0, 0.0, 1.0);
           } else {
             // Natural developable paper curl:
             float arch = sin(t * 3.14159265);
@@ -446,6 +450,17 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
           varying vec3 vNormalVec;
           ${shader.fragmentShader}
         `;
+
+        shader.fragmentShader = shader.fragmentShader.replace(
+          '#include <normal_fragment_begin>',
+          `
+          #include <normal_fragment_begin>
+          // Ensure normal points toward camera/viewer (+Z) so turned left pages receive full directional key light & specular
+          if (dot(normal, vec3(0.0, 0.0, 1.0)) < 0.0) {
+            normal = -normal;
+          }
+          `
+        );
 
         shader.fragmentShader = shader.fragmentShader.replace(
           '#include <map_fragment>',
@@ -697,42 +712,53 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
   }, []);
 
   // Dynamically update textures when externalSpreads change
+  // Dynamic External Spread Texture Update & Event Sync
   useEffect(() => {
-    if (!externalSpreads || sheetsRef.current.length === 0) return;
     let isDisposed = false;
 
-    Promise.all(
-      externalSpreads.map(async (sp) => {
-        const leftTex = await createSpreadCanvasTexture(sp, 'left');
-        const rightTex = await createSpreadCanvasTexture(sp, 'right');
-        return { leftTex, rightTex };
-      })
-    ).then((spreadTexs) => {
-      if (isDisposed) return;
-      const sheets = sheetsRef.current;
-      if (spreadTexs[0]?.leftTex && lBaseMatRef.current) {
-        lBaseMatRef.current.map = spreadTexs[0].leftTex;
-        lBaseMatRef.current.needsUpdate = true;
-      }
-      if (sheets[0]) {
-        if (spreadTexs[0]?.rightTex) sheets[0].uniforms.uFrontTexture.value = spreadTexs[0].rightTex;
-        if (spreadTexs[1]?.leftTex) sheets[0].uniforms.uBackTexture.value = spreadTexs[1].leftTex;
-      }
-      if (sheets[1]) {
-        if (spreadTexs[1]?.rightTex) sheets[1].uniforms.uFrontTexture.value = spreadTexs[1].rightTex;
-        if (spreadTexs[2]?.leftTex) sheets[1].uniforms.uBackTexture.value = spreadTexs[2].leftTex;
-      }
-      if (sheets[2]) {
-        if (spreadTexs[2]?.rightTex) sheets[2].uniforms.uFrontTexture.value = spreadTexs[2].rightTex;
-        if (spreadTexs[3]?.leftTex) sheets[2].uniforms.uBackTexture.value = spreadTexs[3].leftTex;
-      }
-      if (sheets[3]) {
-        if (spreadTexs[3]?.rightTex) sheets[3].uniforms.uFrontTexture.value = spreadTexs[3].rightTex;
-      }
-    });
+    const reloadTextures = () => {
+      const active = externalSpreads || loadSavedContent().spreads;
+      if (!active || sheetsRef.current.length === 0) return;
 
+      Promise.all(
+        active.map(async (sp) => {
+          const leftTex = await createSpreadCanvasTexture(sp, 'left');
+          const rightTex = await createSpreadCanvasTexture(sp, 'right');
+          return { leftTex, rightTex };
+        })
+      ).then((spreadTexs) => {
+        if (isDisposed) return;
+        const sheets = sheetsRef.current;
+        if (spreadTexs[0]?.leftTex && lBaseMatRef.current) {
+          lBaseMatRef.current.map = spreadTexs[0].leftTex;
+          lBaseMatRef.current.needsUpdate = true;
+        }
+        if (sheets[0]) {
+          if (spreadTexs[0]?.rightTex) sheets[0].uniforms.uFrontTexture.value = spreadTexs[0].rightTex;
+          if (spreadTexs[1]?.leftTex) sheets[0].uniforms.uBackTexture.value = spreadTexs[1].leftTex;
+        }
+        if (sheets[1]) {
+          if (spreadTexs[1]?.rightTex) sheets[1].uniforms.uFrontTexture.value = spreadTexs[1].rightTex;
+          if (spreadTexs[2]?.leftTex) sheets[1].uniforms.uBackTexture.value = spreadTexs[2].leftTex;
+        }
+        if (sheets[2]) {
+          if (spreadTexs[2]?.rightTex) sheets[2].uniforms.uFrontTexture.value = spreadTexs[2].rightTex;
+          if (spreadTexs[3]?.leftTex) sheets[2].uniforms.uBackTexture.value = spreadTexs[3].leftTex;
+        }
+        if (sheets[3]) {
+          if (spreadTexs[3]?.rightTex) sheets[3].uniforms.uFrontTexture.value = spreadTexs[3].rightTex;
+        }
+      });
+    };
+
+    if (externalSpreads && sheetsRef.current.length > 0) {
+      reloadTextures();
+    }
+
+    window.addEventListener('butterfly_content_updated', reloadTextures);
     return () => {
       isDisposed = true;
+      window.removeEventListener('butterfly_content_updated', reloadTextures);
     };
   }, [externalSpreads]);
 

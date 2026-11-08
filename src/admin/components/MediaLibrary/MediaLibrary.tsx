@@ -219,7 +219,11 @@ export const MediaLibrary: React.FC<MediaLibraryProps> = ({
                       type="button"
                       className={styles.btnPrimary}
                       style={{ padding: '4px 10px', fontSize: '0.75rem', width: '100%', justifyContent: 'center' }}
-                      onClick={() => url && onSelectMedia(item, url)}
+                      onClick={() => {
+                        if (url && onSelectMedia) {
+                          onSelectMedia(item, url);
+                        }
+                      }}
                     >
                       Insert
                     </button>

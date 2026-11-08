@@ -22,16 +22,6 @@ export interface FinalQuestionModalProps {
   className?: string;
 }
 
-const TOAST_MESSAGES = [
-  'Nice try! 😉',
-  'Too slow! 💨',
-  'Almost! 😜',
-  'Nope! 🏃‍♂️',
-  'Not quite! ✨',
-  'Try again! 💫',
-  'Over here! 👋',
-];
-
 export const FinalQuestionModal = memo(function FinalQuestionModal({
   isLandedOnTip,
   onReplay,
@@ -41,9 +31,6 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
   const [hasEntered, setHasEntered] = useState(false);
   const [isCelebration, setIsCelebration] = useState(false);
   const [noOffset, setNoOffset] = useState({ x: 0, y: 0 });
-  const [showToast, setShowToast] = useState(false);
-  const [toastMessage, setToastMessage] = useState('Nice try! 😉');
-  const [isToastBelow, setIsToastBelow] = useState(false);
 
   // Centralized Content Subscription
   const [fqContent, setFqContent] = useState<FinalQuestionContent>(() => {
@@ -80,7 +67,6 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
     });
   }, [fqContent.stickers]);
 
-  const toastTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastDodgeTimeRef = useRef<number>(0);
   const dodgeCountRef = useRef<number>(0);
   const recentZonesRef = useRef<number[]>([]);
@@ -253,20 +239,7 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
     const nextOffsetX = Math.round(chosenX - naturalX);
     const nextOffsetY = Math.round(chosenY - naturalY);
     setNoOffset({ x: nextOffsetX, y: nextOffsetY });
-
-    // Flip toast bubble if button moved near the top of the viewport
-    setIsToastBelow(chosenY < 70);
-
-    // Toast message update
-    const msg = TOAST_MESSAGES[dodgeCountRef.current % TOAST_MESSAGES.length];
     dodgeCountRef.current += 1;
-    setToastMessage(msg);
-    setShowToast(true);
-
-    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
-    toastTimeoutRef.current = setTimeout(() => {
-      setShowToast(false);
-    }, 1800);
   }, [noOffset.x, noOffset.y]);
 
   // Proximity approach detection: dodges smoothly as cursor draws near
@@ -298,7 +271,6 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
     setIsVisible(false);
     setHasEntered(false);
     setNoOffset({ x: 0, y: 0 });
-    setShowToast(false);
     recentZonesRef.current = [];
     if (onReplay) {
       onReplay();
@@ -408,15 +380,6 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
                   willChange: 'transform',
                 }}
               >
-                {showToast && (
-                  <div
-                    className={`${styles.dodgeToast} ${
-                      isToastBelow ? styles.toastBelow : ''
-                    }`.trim()}
-                  >
-                    {toastMessage}
-                  </div>
-                )}
                 <button
                   ref={noButtonRef}
                   type="button"

@@ -149,11 +149,13 @@ export async function importContentPackage(jsonString: string): Promise<Butterfl
  * Ensures required arrays and properties exist on loaded content
  */
 function sanitizeContent(raw: Partial<ButterflyContent>): ButterflyContent {
+  const isV2 = (raw.version || 0) >= 2;
   return {
-    version: raw.version || 1,
+    version: 2,
     lastSaved: raw.lastSaved || Date.now(),
-    spreads: Array.isArray(raw.spreads) && raw.spreads.length > 0 ? raw.spreads : DEFAULT_BUTTERFLY_CONTENT.spreads,
+    spreads: isV2 && Array.isArray(raw.spreads) && raw.spreads.length > 0 ? raw.spreads : DEFAULT_BUTTERFLY_CONTENT.spreads,
     finalQuestion: raw.finalQuestion || DEFAULT_BUTTERFLY_CONTENT.finalQuestion,
     mediaAssets: Array.isArray(raw.mediaAssets) ? raw.mediaAssets : [],
   };
 }
+

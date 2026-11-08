@@ -40,6 +40,24 @@ export interface PageLeftContent {
   handwrittenNotes: string[];
 }
 
+export interface PageTypography {
+  fontFamily?: string;       // 'Caveat', 'Patrick Hand', 'Kalam', 'Dancing Script', 'Playfair Display'
+  fontSize?: number;         // 20 - 52 (default: 34 for canvas)
+  color?: string;            // default: '#17120F'
+  lineHeight?: number;       // 1.2 - 2.2 (default: 1.55)
+  paragraphSpacing?: number; // 10 - 50 (default: 28)
+  textAlign?: 'left' | 'center' | 'right';
+}
+
+export interface MusicMarker {
+  id: string;
+  trackId: string;
+  title?: string;
+  startTime?: number;
+  endTime?: number;
+  loop?: boolean;
+}
+
 export interface PageRightContent {
   chapterNumber: string;
   chapterTitle: string;
@@ -48,6 +66,8 @@ export interface PageRightContent {
   storyParagraphs: string[];
   signature?: string;
   stickers: StickerItem[];
+  typography?: PageTypography;
+  musicMarkers?: Record<string, MusicMarker>;
 }
 
 export interface StorySpreadContent {
@@ -76,10 +96,22 @@ export interface MediaAsset {
   dataUrl?: string;    // Base64 data URL for export/preview
 }
 
+export interface AudioTrack {
+  id: string;
+  name: string;        // Track display name
+  fileName: string;    // Original file name
+  type: string;        // MIME type
+  size: number;        // Bytes
+  duration: number;    // Seconds
+  createdAt: number;
+}
+
 export interface ButterflyContent {
   version: number;
   lastSaved: number;
   spreads: StorySpreadContent[];
   finalQuestion: FinalQuestionContent;
   mediaAssets: MediaAsset[];
+  audioTracks?: AudioTrack[];
 }
+

@@ -15,6 +15,7 @@ import type {
   PageRightContent,
   StickerItem,
   MediaAsset,
+  PageTypography,
 } from '../../../services/content/types';
 import { StickerCanvas } from '../Common/StickerCanvas';
 import { MediaLibrary } from '../MediaLibrary/MediaLibrary';
@@ -66,6 +67,39 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
   const activeLeft = activeSpread.leftPage;
   const activeRight = activeSpread.rightPage;
 
+  // Active page typography & capacity calculations
+  const typo = activeRight.typography || {};
+  const activeFont = typo.fontFamily || 'Caveat';
+  const activeFontSize = typo.fontSize || 34;
+  const activeColor = typo.color || '#17120F';
+  const activeLineHeight = typo.lineHeight || 1.55;
+  const activeParaSpacing = typo.paragraphSpacing !== undefined ? typo.paragraphSpacing : 28;
+  const activeAlign = typo.textAlign || 'left';
+
+  // Capacity calculation for right page:
+  const allWords = activeRight.storyParagraphs.join(' ').trim().split(/\s+/).filter(Boolean);
+  const wordsCount = allWords.length;
+  const nonBlankParas = activeRight.storyParagraphs.filter((p) => p.trim().length > 0);
+
+  // Usable text width on canvas is 734px. Avg character width in handwriting font is approx fontSize * 0.43
+  const avgCharW = activeFontSize * 0.43;
+  const charsPerLine = Math.max(22, Math.floor(734 / avgCharW));
+
+  let estTotalLines = 0;
+  nonBlankParas.forEach((p) => {
+    const linesInPara = Math.max(1, Math.ceil(p.length / charsPerLine));
+    estTotalLines += linesInPara;
+  });
+
+  const linePx = Math.round(activeFontSize * activeLineHeight);
+  const totalTextHeightPx = (estTotalLines * linePx) + (Math.max(0, nonBlankParas.length - 1) * activeParaSpacing);
+  const usableHeightPx = 760; // 1082 canvas - 240 header - 82 bottom margin
+  const capacityPct = Math.round((totalTextHeightPx / usableHeightPx) * 100);
+
+  // Scaled typography for live preview
+  const previewFontSize = `${Math.round(activeFontSize * 0.58)}px`;
+  const previewParaGap = `${Math.round(activeParaSpacing * 0.38)}px`;
+
   // Update spread helper
   const updateActiveSpread = (
     updater: (spread: StorySpreadContent) => StorySpreadContent
@@ -94,6 +128,32 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     updateActiveSpread((sp) => ({
       ...sp,
       rightPage: updater(sp.rightPage),
+    }));
+  };
+
+  // Update Right Page Typography
+  const updateTypography = (updater: (prev: PageTypography) => PageTypography) => {
+    updateRightPage((r) => ({
+      ...r,
+      typography: updater(r.typography || {
+        fontFamily: 'Caveat',
+        fontSize: 34,
+        color: '#17120F',
+        lineHeight: 1.55,
+        paragraphSpacing: 28,
+        textAlign: 'left',
+      }),
+    }));
+  };
+
+  const handleResetTypography = () => {
+    updateTypography(() => ({
+      fontFamily: 'Caveat',
+      fontSize: 34,
+      color: '#17120F',
+      lineHeight: 1.55,
+      paragraphSpacing: 28,
+      textAlign: 'left',
     }));
   };
 
@@ -226,51 +286,224 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
             >
               {/* Overlay preview of text / polaroid content for realistic placement */}
               {activeSide === 'right' ? (
-                <div style={{ padding: '40px 30px', pointerEvents: 'none', userSelect: 'none' }}>
-                  <div style={{ color: '#9b7a48', fontSize: '11px', letterSpacing: '2px', textTransform: 'uppercase', fontWeight: 600 }}>
-                    {activeRight.chapterNumber}
-                  </div>
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: '20px', color: '#2d1808', margin: '6px 0 16px' }}>
-                    {activeRight.chapterTitle}
-                  </h3>
-                  <div style={{ fontFamily: "'Playfair Display', serif", fontSize: '12px', color: '#3a2414', lineHeight: 1.5 }}>
-                    {activeRight.storyParagraphs[0]?.slice(0, 160)}...
-                  </div>
-                  {activeRight.signature && (
-                    <div style={{ fontStyle: 'italic', color: '#5c3a22', fontSize: '12px', textAlign: 'right', marginTop: '20px' }}>
-                      {activeRight.signature}
+                <div style={{ padding: '36px 32px', pointerEvents: 'none', userSelect: 'none', position: 'relative', height: '100%' }}>
+                  {/* Butterfly flight loop doodle in top right */}
+                  <img
+                    src="/storybook/assets/doodle_butterfly.png"
+                    alt=""
+                    style={{ position: 'absolute', top: '18px', right: '24px', width: '60px', opacity: 0.95 }}
+                  />
+
+                  {/* Top-Right Date with Pen Underline */}
+                  {activeRight.dateOrLocation && (
+                    <div style={{ textAlign: 'right', marginBottom: '8px' }}>
+                      <span
+                        style={{
+                          fontFamily: `"${activeFont}", 'Caveat', 'Patrick Hand', cursive, sans-serif`,
+                          fontSize: '24px',
+                          color: activeColor,
+                          fontWeight: 600,
+                        }}
+                      >
+                        {activeRight.dateOrLocation}
+                      </span>
+                      <div
+                        style={{
+                          width: '70px',
+                          height: '2px',
+                          background: activeColor,
+                          marginLeft: 'auto',
+                          marginTop: '-2px',
+                        }}
+                      />
                     </div>
                   )}
+
+                  {/* Chapter Header with Blush Highlight */}
+                  {activeRight.chapterNumber && (
+                    <div style={{ position: 'relative', display: 'inline-block', marginBottom: '4px' }}>
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '2px',
+                          left: '-4px',
+                          width: 'calc(100% + 10px)',
+                          height: '14px',
+                          background: 'rgba(235, 160, 175, 0.45)',
+                          borderRadius: '4px',
+                        }}
+                      />
+                      <span
+                        style={{
+                          position: 'relative',
+                          zIndex: 2,
+                          fontFamily: `"${activeFont}", 'Caveat', 'Patrick Hand', cursive, sans-serif`,
+                          fontSize: '22px',
+                          fontWeight: 700,
+                          color: activeColor,
+                        }}
+                      >
+                        {activeRight.chapterNumber}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Chapter Title with Blush Highlight */}
+                  {activeRight.chapterTitle && (
+                    <div style={{ position: 'relative', display: 'inline-block', marginBottom: '14px' }}>
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: '3px',
+                          left: '-6px',
+                          width: 'calc(100% + 14px)',
+                          height: '18px',
+                          background: 'rgba(235, 160, 175, 0.45)',
+                          borderRadius: '6px',
+                        }}
+                      />
+                      <h3
+                        style={{
+                          position: 'relative',
+                          zIndex: 2,
+                          fontFamily: `"${activeFont}", 'Caveat', 'Patrick Hand', cursive, sans-serif`,
+                          fontSize: '28px',
+                          fontWeight: 700,
+                          color: activeColor,
+                          margin: 0,
+                        }}
+                      >
+                        {activeRight.chapterTitle}
+                      </h3>
+                    </div>
+                  )}
+
+                  {/* Handwritten Story Body in Pure Black Fountain Pen Ink flowing down */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: previewParaGap }}>
+                    {activeRight.storyParagraphs.map((para, pIdx) => (
+                      <p
+                        key={pIdx}
+                        style={{
+                          fontFamily: `"${activeFont}", 'Caveat', 'Patrick Hand', cursive, sans-serif`,
+                          fontSize: previewFontSize,
+                          lineHeight: activeLineHeight,
+                          color: activeColor,
+                          margin: 0,
+                          textAlign: activeAlign,
+                        }}
+                      >
+                        {para}
+                      </p>
+                    ))}
+                  </div>
+
+                  {/* Closing Signature if present */}
+                  {activeRight.signature && (
+                    <div style={{ textAlign: 'right', marginTop: '12px' }}>
+                      <span
+                        style={{
+                          fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                          fontStyle: 'italic',
+                          fontSize: `calc(${previewFontSize} * 0.95)`,
+                          color: activeColor,
+                        }}
+                      >
+                        {activeRight.signature}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Pink Wildflower Sprig in Bottom Right */}
+                  <img
+                    src="/storybook/assets/flower_pink_sprig.png"
+                    alt=""
+                    style={{ position: 'absolute', bottom: '18px', right: '22px', width: '65px', opacity: 0.92 }}
+                  />
                 </div>
               ) : (
-                <div style={{ padding: '30px 20px', pointerEvents: 'none', userSelect: 'none' }}>
-                  <div style={{ display: 'flex', gap: '14px', justifyContent: 'center' }}>
+                <div style={{ padding: '24px 16px', pointerEvents: 'none', userSelect: 'none', height: '100%', position: 'relative' }}>
+                  <div
+                    style={{
+                      display: 'flex',
+                      flexWrap: 'wrap',
+                      gap: '14px',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                    }}
+                  >
                     {activeLeft.photos.map((p) => (
                       <div
                         key={p.id}
                         style={{
-                          background: '#fffdfa',
+                          background: '#fffefb',
+                          border: '1px solid #ede4d3',
                           padding: '6px 6px 14px',
-                          boxShadow: '0 4px 10px rgba(0,0,0,0.2)',
-                          width: '130px',
+                          boxShadow: '0 8px 18px rgba(25,14,6,0.22)',
+                          width: activeLeft.photos.length === 3 ? '120px' : '145px',
                           transform: `rotate(${p.rotationDeg}deg)`,
                           borderRadius: '2px',
+                          position: 'relative',
                         }}
                       >
-                        <div style={{ width: '100%', height: '90px', background: p.bgGradient, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>
-                          {p.doodle || '📷'}
+                        {/* Washi Tape Strip */}
+                        <div
+                          style={{
+                            position: 'absolute',
+                            top: '-8px',
+                            left: '50%',
+                            transform: 'translateX(-50%)',
+                            width: '55px',
+                            height: '14px',
+                            background:
+                              p.tapeStyle === 'washi-gold'
+                                ? 'rgba(235, 215, 185, 0.9)'
+                                : 'rgba(245, 175, 190, 0.9)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                          }}
+                        />
+
+                        {/* Photo Image or fallback */}
+                        <div
+                          style={{
+                            width: '100%',
+                            height: activeLeft.photos.length === 3 ? '85px' : '105px',
+                            background: p.bgGradient || '#fdfbf7',
+                            overflow: 'hidden',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                          }}
+                        >
+                          {p.customUrl ? (
+                            <img
+                              src={p.customUrl}
+                              alt={p.title}
+                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                            />
+                          ) : (
+                            <span style={{ fontSize: '24px' }}>{p.doodle || '📷'}</span>
+                          )}
                         </div>
-                        <div style={{ fontSize: '10px', fontWeight: 600, color: '#3c2415', marginTop: '6px' }}>
+
+                        {/* Polaroid Caption in Black Ink Handwriting */}
+                        <div
+                          style={{
+                            fontFamily: "'Caveat', 'Patrick Hand', cursive",
+                            fontSize: '14px',
+                            color: '#161311',
+                            fontWeight: 600,
+                            marginTop: '6px',
+                            textAlign: 'left',
+                            whiteSpace: 'nowrap',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                          }}
+                        >
                           {p.title}
                         </div>
                       </div>
                     ))}
                   </div>
-                  {activeLeft.handwrittenNotes.length > 0 && (
-                    <div style={{ fontStyle: 'italic', color: '#412a1a', fontSize: '12px', textAlign: 'center', marginTop: '24px' }}>
-                      {activeLeft.handwrittenNotes[0]}
-                    </div>
-                  )}
                 </div>
               )}
             </StickerCanvas>
@@ -319,46 +552,310 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                 />
               </div>
 
+              {/* Typography & Handwriting Controls Card */}
+              <div className={styles.typographyCard}>
+                <div className={styles.typographyHeader}>
+                  <h4 className={styles.typographyTitle}>
+                    <span>✒️</span> Typography & Layout
+                  </h4>
+                  <button
+                    type="button"
+                    onClick={handleResetTypography}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--admin-gold-primary)',
+                      fontSize: '0.72rem',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                  >
+                    Reset Defaults
+                  </button>
+                </div>
+
+                {/* Font Family Selector */}
+                <div className={styles.formGroup} style={{ gap: '4px' }}>
+                  <label className={styles.formLabel}>Font Family</label>
+                  <select
+                    className={styles.formSelect}
+                    value={activeFont}
+                    onChange={(e) => updateTypography((t) => ({ ...t, fontFamily: e.target.value }))}
+                  >
+                    <option value="Caveat">Caveat (Authentic Diary Cursive)</option>
+                    <option value="Patrick Hand">Patrick Hand (Warm Handwritten)</option>
+                    <option value="Kalam">Kalam (Natural Fountain Pen)</option>
+                    <option value="Playfair Display">Playfair Display (Editorial Serif)</option>
+                    <option value="Cormorant Garamond">Cormorant Garamond (Romantic Serif)</option>
+                  </select>
+                </div>
+
+                {/* Font Size (Slider + Numeric Box) */}
+                <div className={styles.formGroup} style={{ gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className={styles.formLabel}>Font Size</label>
+                    <span style={{ fontSize: '0.76rem', color: 'var(--admin-gold-bright)', fontFamily: 'monospace' }}>
+                      {activeFontSize}px
+                    </span>
+                  </div>
+                  <div className={styles.sliderRow}>
+                    <input
+                      type="range"
+                      min={20}
+                      max={52}
+                      step={1}
+                      className={styles.sliderInput}
+                      value={activeFontSize}
+                      onChange={(e) => updateTypography((t) => ({ ...t, fontSize: Number(e.target.value) }))}
+                    />
+                    <input
+                      type="number"
+                      min={20}
+                      max={52}
+                      className={styles.sliderNumberBox}
+                      value={activeFontSize}
+                      onChange={(e) => updateTypography((t) => ({ ...t, fontSize: Number(e.target.value) || 34 }))}
+                    />
+                  </div>
+                </div>
+
+                {/* Ink Color Picker & Swatches */}
+                <div className={styles.formGroup} style={{ gap: '4px' }}>
+                  <label className={styles.formLabel}>Ink Color</label>
+                  <div className={styles.colorPickerRow}>
+                    <input
+                      type="color"
+                      className={styles.colorPickerNative}
+                      value={activeColor}
+                      onChange={(e) => updateTypography((t) => ({ ...t, color: e.target.value }))}
+                    />
+                    <input
+                      type="text"
+                      className={styles.colorPickerHex}
+                      value={activeColor}
+                      onChange={(e) => updateTypography((t) => ({ ...t, color: e.target.value }))}
+                    />
+                    <div className={styles.colorSwatches}>
+                      {[
+                        { label: 'Deep Black', color: '#17120F' },
+                        { label: 'Dark Walnut', color: '#2b1810' },
+                        { label: 'Vintage Sepia', color: '#3e2a1e' },
+                        { label: 'Indigo Navy', color: '#161c28' },
+                      ].map((swatch) => (
+                        <button
+                          key={swatch.color}
+                          type="button"
+                          title={swatch.label}
+                          className={styles.colorSwatchBtn}
+                          style={{
+                            background: swatch.color,
+                            border: activeColor.toLowerCase() === swatch.color.toLowerCase() ? '2px solid var(--admin-gold-bright)' : '1.5px solid rgba(255,255,255,0.25)',
+                          }}
+                          onClick={() => updateTypography((t) => ({ ...t, color: swatch.color }))}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Line Height Slider */}
+                <div className={styles.formGroup} style={{ gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className={styles.formLabel}>Line Height</label>
+                    <span style={{ fontSize: '0.76rem', color: 'var(--admin-gold-bright)', fontFamily: 'monospace' }}>
+                      {activeLineHeight.toFixed(2)}x
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={1.2}
+                    max={2.2}
+                    step={0.05}
+                    className={styles.sliderInput}
+                    value={activeLineHeight}
+                    onChange={(e) => updateTypography((t) => ({ ...t, lineHeight: Number(e.target.value) }))}
+                  />
+                </div>
+
+                {/* Paragraph Spacing Slider */}
+                <div className={styles.formGroup} style={{ gap: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <label className={styles.formLabel}>Paragraph Spacing</label>
+                    <span style={{ fontSize: '0.76rem', color: 'var(--admin-gold-bright)', fontFamily: 'monospace' }}>
+                      {activeParaSpacing}px
+                    </span>
+                  </div>
+                  <input
+                    type="range"
+                    min={10}
+                    max={50}
+                    step={2}
+                    className={styles.sliderInput}
+                    value={activeParaSpacing}
+                    onChange={(e) => updateTypography((t) => ({ ...t, paragraphSpacing: Number(e.target.value) }))}
+                  />
+                </div>
+
+                {/* Text Alignment */}
+                <div className={styles.formGroup} style={{ gap: '4px' }}>
+                  <label className={styles.formLabel}>Text Alignment</label>
+                  <div className={styles.segmentedButtonGroup}>
+                    {(['left', 'center', 'right'] as const).map((align) => (
+                      <button
+                        key={align}
+                        type="button"
+                        className={`${styles.segmentedButton} ${activeAlign === align ? styles.segmentedButtonActive : ''}`}
+                        onClick={() => updateTypography((t) => ({ ...t, textAlign: align }))}
+                      >
+                        {align === 'left' ? 'Left ⯸' : align === 'center' ? 'Center ⯹' : 'Right ⯺'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Multi-Paragraph Story Narrative Editor */}
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Ornamental Drop Cap Letter</label>
-                <input
-                  type="text"
-                  maxLength={1}
-                  className={styles.formInput}
-                  style={{ width: '80px', textAlign: 'center', fontSize: '1.2rem', fontWeight: 700 }}
-                  value={activeRight.decorativeInitial}
-                  onChange={(e) => updateRightPage((r) => ({ ...r, decorativeInitial: e.target.value }))}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className={styles.formLabel}>Story Narrative (Full-Page Writing)</label>
+                  <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-subtle)' }}>
+                    Separate paragraphs with empty lines
+                  </span>
+                </div>
+                <textarea
+                  className={styles.formTextarea}
+                  style={{
+                    minHeight: '160px',
+                    fontFamily: `"${activeFont}", cursive, sans-serif`,
+                    fontSize: '1.05rem',
+                    lineHeight: '1.5',
+                  }}
+                  value={activeRight.storyParagraphs.join('\n\n')}
+                  onChange={(e) => {
+                    const text = e.target.value;
+                    const paras = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+                    updateRightPage((r) => ({
+                      ...r,
+                      storyParagraphs: paras.length > 0 ? paras : (text.trim() ? [text.trim()] : []),
+                    }));
+                  }}
+                  placeholder="Write your story freely across the page. Separate paragraphs with an empty line..."
                 />
               </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Story Paragraph 1</label>
-                <textarea
-                  className={styles.formTextarea}
-                  value={activeRight.storyParagraphs[0] || ''}
-                  onChange={(e) =>
-                    updateRightPage((r) => {
-                      const next = [...r.storyParagraphs];
-                      next[0] = e.target.value;
-                      return { ...r, storyParagraphs: next };
-                    })
-                  }
-                />
+              {/* Individual Paragraphs List (Add / Remove / Reorder) */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--admin-gold-primary)' }}>
+                    Paragraph Blocks ({activeRight.storyParagraphs.length})
+                  </span>
+                  <button
+                    type="button"
+                    style={{
+                      background: 'rgba(229, 189, 117, 0.15)',
+                      border: '1px solid var(--admin-border)',
+                      borderRadius: '4px',
+                      color: 'var(--admin-gold-primary)',
+                      padding: '2px 8px',
+                      fontSize: '0.72rem',
+                      cursor: 'pointer',
+                    }}
+                    onClick={() => {
+                      updateRightPage((r) => ({
+                        ...r,
+                        storyParagraphs: [...r.storyParagraphs, ''],
+                      }));
+                    }}
+                  >
+                    + Add Paragraph
+                  </button>
+                </div>
+                {activeRight.storyParagraphs.map((para, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-subtle)', minWidth: '18px', paddingTop: '6px' }}>
+                      P{idx + 1}
+                    </span>
+                    <input
+                      type="text"
+                      className={styles.formInput}
+                      style={{ flex: 1, padding: '6px 10px', fontSize: '0.82rem' }}
+                      value={para}
+                      onChange={(e) => {
+                        const next = [...activeRight.storyParagraphs];
+                        next[idx] = e.target.value;
+                        updateRightPage((r) => ({ ...r, storyParagraphs: next }));
+                      }}
+                    />
+                    {activeRight.storyParagraphs.length > 1 && (
+                      <button
+                        type="button"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--admin-danger)',
+                          cursor: 'pointer',
+                          padding: '6px',
+                          fontSize: '0.9rem',
+                        }}
+                        title="Remove paragraph"
+                        onClick={() => {
+                          const next = activeRight.storyParagraphs.filter((_, i) => i !== idx);
+                          updateRightPage((r) => ({ ...r, storyParagraphs: next }));
+                        }}
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                ))}
               </div>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Story Paragraph 2</label>
-                <textarea
-                  className={styles.formTextarea}
-                  value={activeRight.storyParagraphs[1] || ''}
-                  onChange={(e) =>
-                    updateRightPage((r) => {
-                      const next = [...r.storyParagraphs];
-                      next[1] = e.target.value;
-                      return { ...r, storyParagraphs: next };
-                    })
-                  }
-                />
+              {/* Visual Page Capacity Gauge & Overflow Warning */}
+              <div className={styles.capacityGauge}>
+                <div className={styles.capacityHeader}>
+                  <span className={styles.capacityLabel}>Page Fill Capacity</span>
+                  <span
+                    className={styles.capacityPct}
+                    style={{
+                      color: capacityPct > 100 ? 'var(--admin-danger)' : capacityPct > 80 ? 'var(--admin-gold-amber)' : 'var(--admin-success)',
+                    }}
+                  >
+                    {capacityPct}% Filled
+                  </span>
+                </div>
+                <div className={styles.capacityTrack}>
+                  <div
+                    className={styles.capacityFill}
+                    style={{
+                      width: `${Math.min(100, capacityPct)}%`,
+                      background:
+                        capacityPct > 100
+                          ? 'linear-gradient(90deg, #e08b1c, #e05244)'
+                          : capacityPct > 80
+                          ? 'linear-gradient(90deg, #e5bd75, #e08b1c)'
+                          : 'linear-gradient(90deg, #4ec874, #e5bd75)',
+                    }}
+                  />
+                </div>
+                <div className={styles.capacityStats}>
+                  <span>Words: {wordsCount}</span>
+                  <span>Paragraphs: {nonBlankParas.length}</span>
+                  <span>Est. Lines: {estTotalLines}</span>
+                  <span>Space: {totalTextHeightPx}px / {usableHeightPx}px</span>
+                </div>
+                {capacityPct <= 75 ? (
+                  <div className={`${styles.capacityBadge} ${styles.capacityBadgeOptimal}`}>
+                    <span>✓</span> Comfortable Page Fit — Beautiful breathing room & margins.
+                  </div>
+                ) : capacityPct <= 100 ? (
+                  <div className={`${styles.capacityBadge} ${styles.capacityBadgeNearFull}`}>
+                    <span>✦</span> Full Page Coverage — Fills page comfortably from top to bottom.
+                  </div>
+                ) : (
+                  <div className={`${styles.capacityBadge} ${styles.capacityBadgeOverflow}`}>
+                    <span>⚠️</span> Page Overflow Warning ({capacityPct}%): Text exceeds physical page boundaries and will be clipped at the bottom! Reduce font size, line spacing, or trim story length.
+                  </div>
+                )}
               </div>
 
               <div className={styles.formGroup}>
@@ -368,6 +865,7 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                   className={styles.formInput}
                   value={activeRight.signature || ''}
                   onChange={(e) => updateRightPage((r) => ({ ...r, signature: e.target.value }))}
+                  placeholder="e.g. Always yours, Elena ♡"
                 />
               </div>
             </>
@@ -487,3 +985,4 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     </div>
   );
 };
+

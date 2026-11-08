@@ -766,3 +766,231 @@
   justify-content: flex-end;
   gap: 12px;
 }
+
+/* --------------------------------------------------------------------------
+ * Typography Controls & Capacity Gauge
+ * -------------------------------------------------------------------------- */
+.typographyCard {
+  background: rgba(28, 22, 16, 0.72);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 8px;
+}
+
+.typographyHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(229, 189, 117, 0.15);
+  padding-bottom: 8px;
+}
+
+.typographyTitle {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.88rem;
+  letter-spacing: 0.1em;
+  color: var(--admin-gold-primary);
+  text-transform: uppercase;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sliderRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sliderInput {
+  flex: 1;
+  accent-color: var(--admin-gold-primary);
+  cursor: pointer;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 3px;
+}
+
+.sliderNumberBox {
+  width: 58px;
+  background: rgba(24, 18, 12, 0.85);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: var(--admin-gold-bright);
+  font-size: 0.82rem;
+  text-align: center;
+}
+
+.segmentedButtonGroup {
+  display: flex;
+  background: rgba(18, 14, 10, 0.85);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.segmentedButton {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-radius: 5px;
+  padding: 6px 10px;
+  color: var(--admin-text-muted);
+  font-size: 0.80rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.segmentedButtonActive {
+  background: rgba(229, 189, 117, 0.22);
+  color: var(--admin-gold-bright);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.colorPickerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.colorPickerNative {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.colorPickerHex {
+  font-family: monospace;
+  font-size: 0.82rem;
+  color: var(--admin-gold-bright);
+  background: rgba(24, 18, 12, 0.85);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  padding: 6px 10px;
+  width: 80px;
+  text-align: center;
+}
+
+.colorSwatches {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.colorSwatchBtn {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  cursor: pointer;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.colorSwatchBtn:hover {
+  transform: scale(1.15);
+  border-color: var(--admin-gold-primary);
+}
+
+/* Page Capacity Indicator / Gauge */
+.capacityGauge {
+  background: rgba(24, 18, 12, 0.88);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.capacityHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.capacityLabel {
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.78rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--admin-gold-primary);
+}
+
+.capacityPct {
+  font-size: 0.84rem;
+  font-weight: 700;
+  font-family: monospace;
+}
+
+.capacityTrack {
+  width: 100%;
+  height: 9px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+}
+
+.capacityFill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.3s ease, background 0.3s ease;
+}
+
+.capacityStats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.74rem;
+  color: var(--admin-text-subtle);
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.capacityBadge {
+  font-size: 0.76rem;
+  line-height: 1.4;
+  padding: 6px 10px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.capacityBadgeOptimal {
+  background: rgba(78, 200, 116, 0.12);
+  border: 1px solid rgba(78, 200, 116, 0.35);
+  color: #7ce89b;
+}
+
+.capacityBadgeNearFull {
+  background: rgba(229, 189, 117, 0.15);
+  border: 1px solid rgba(229, 189, 117, 0.4);
+  color: var(--admin-gold-bright);
+}
+
+.capacityBadgeOverflow {
+  background: rgba(224, 82, 68, 0.18);
+  border: 1px solid rgba(224, 82, 68, 0.55);
+  color: #ff8e82;
+  font-weight: 600;
+}
+
