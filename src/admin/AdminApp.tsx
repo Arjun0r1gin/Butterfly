@@ -121,6 +121,8 @@ export const AdminApp: React.FC = () => {
                 ? 'Saving...'
                 : hasUnsavedChanges
                 ? 'Unsaved changes (Draft cached)'
+                : lastSaved
+                ? `Saved (${new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
                 : 'All changes saved'}
             </span>
           </div>

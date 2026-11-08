@@ -4,7 +4,7 @@
  * and animated GIF rendering for scrapbook pages and the final proposal screen.
  */
 
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import type { StickerItem } from '../../../services/content/types';
 import { getMediaUrl } from '../../../services/content/indexedDB';
 import styles from '../../Admin.module.css';
@@ -172,7 +172,7 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
 
   // Global Pointer Move
   const handlePointerMove = (e: React.PointerEvent) => {
-    const { isDragging, isResizing, isRotating, id, startX, startY, origX, origY, origW, origH, origRot, centerX, centerY } =
+    const { isDragging, isResizing, isRotating, id, startX, startY, origX, origY, origW, origH, centerX, centerY } =
       dragRef.current;
 
     if (!isDragging && !isResizing && !isRotating) return;
