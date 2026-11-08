@@ -1,0 +1,92 @@
+/**
+ * BUTTERFLY — Stacking Context & Layering Architecture
+ * Explicit z-index tokens preventing stacking collisions across scenes and persistent UI.
+ */
+
+:root {
+  /* Layer Hierarchy */
+  --z-deep-parallax: -100;
+  --z-background: -10;
+  --z-scene-base: 1;
+  --z-scene-mid: 10;
+  --z-scene-foreground: 20;
+  --z-character: 30;
+  --z-floating-particles: 40;
+  --z-vignette: 50;
+  --z-hud: 100;
+  --z-modal: 200;
+  --z-toast: 300;
+  --z-cursor: 9999;
+}
+
+/* Layer utility classes */
+.layer-deep-parallax {
+  position: absolute;
+  z-index: var(--z-deep-parallax);
+}
+
+.layer-background {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-background);
+  pointer-events: none;
+}
+
+.layer-scene-base {
+  position: relative;
+  z-index: var(--z-scene-base);
+}
+
+.layer-scene-mid {
+  position: relative;
+  z-index: var(--z-scene-mid);
+}
+
+.layer-scene-foreground {
+  position: relative;
+  z-index: var(--z-scene-foreground);
+  pointer-events: none;
+}
+
+.layer-character {
+  position: absolute;
+  z-index: var(--z-character);
+  pointer-events: none;
+}
+
+.layer-floating-particles {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-floating-particles);
+  pointer-events: none;
+}
+
+.layer-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-vignette);
+  pointer-events: none;
+}
+
+.layer-hud {
+  position: fixed;
+  z-index: var(--z-hud);
+}
+
+.layer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+}
+
+.layer-cursor {
+  position: fixed;
+  z-index: var(--z-cursor);
+  pointer-events: none;
+}
+
+/* Creates a clean local stacking context to avoid cross-scene bleed */
+.isolate-stack {
+  isolation: isolate;
+}
+

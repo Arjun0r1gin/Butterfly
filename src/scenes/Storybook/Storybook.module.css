@@ -1,0 +1,728 @@
+/**
+ * BUTTERFLY — Storybook Scene Stylesheet
+ * True CSS 3D physics-based page turning with realistic perspective,
+ * deckled parchment pages, ornate brass corners, and golden spiral rings.
+ */
+
+.storybookScene {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, #4a7522 0%, #304e14 65%, #1d310a 100%);
+  isolation: isolate;
+}
+
+/* Background sunset garden ambience */
+.gardenBackdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.35;
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+/* Physical Cylindrical Page Curving Canvas */
+.pageCurlCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 25;
+}
+
+/* Three.js Prototype Sandbox */
+.threePrototypeWrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.threeCanvasContainer {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  filter: drop-shadow(0 20px 48px rgba(25, 12, 5, 0.55));
+}
+
+.prototypeControls {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  background: rgba(25, 15, 8, 0.88);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  backdrop-filter: blur(12px);
+  padding: 10px 24px;
+  border-radius: 14px;
+  color: #fff8ee;
+  z-index: 50;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.prototypeHeader {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 0.95rem;
+}
+
+.prototypeTitle {
+  font-weight: 600;
+  color: #fbbf24;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
+}
+
+.prototypeProgressText {
+  font-variant-numeric: tabular-nums;
+  color: #fde68a;
+}
+
+.prototypeSlider {
+  width: 420px;
+  max-width: 80vw;
+  accent-color: #f59e0b;
+  cursor: pointer;
+}
+
+.prototypeStageButtons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.prototypeStageBtn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff8ee;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.15s ease;
+}
+
+.prototypeStageBtn:hover {
+  background: rgba(245, 158, 11, 0.3);
+  border-color: #f59e0b;
+  color: #fff;
+}
+
+.prototypeStageBtnActive {
+  background: #f59e0b !important;
+  border-color: #d97706 !important;
+  color: #1a0f05 !important;
+  font-weight: 700;
+}
+
+.prototypeBtn {
+  background: rgba(245, 158, 11, 0.2);
+  border: 1px solid rgba(245, 158, 11, 0.5);
+  color: #fde68a;
+  padding: 3px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.prototypeBtn:hover {
+  background: #f59e0b;
+  color: #1a0f05;
+}
+
+.prototypeBtnActive {
+  background: #ef4444;
+  border-color: #dc2626;
+  color: #fff;
+}
+
+/* Master 3D Book Container */
+.bookStage {
+  position: relative;
+  width: 82vw;
+  max-width: 1400px;
+  height: 70vh;
+  max-height: 800px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.embeddedThreeBook {
+  width: 100% !important;
+  height: 100% !important;
+  position: relative;
+}
+
+.embeddedThreeBook .threeCanvasContainer {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+/* Base Leather Hardcover & Stacked Page Edges */
+.bookCoverBackdrop {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  z-index: 1;
+  filter: drop-shadow(0 18px 30px rgba(0, 0, 0, 0.45));
+}
+
+/* Page Bounds Container (Mapped precisely to reference 1024x576 page margins) */
+.pagesCanvas {
+  position: absolute;
+  top: 23.96%;
+  bottom: 17.01%;
+  left: 10.94%;
+  right: 10.94%;
+  transform-style: preserve-3d;
+  z-index: 5;
+}
+
+/* Left Resting Page Stack */
+.leftRestingPage {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 48.2%;
+  height: 100%;
+  z-index: 2;
+  overflow: hidden;
+  border-radius: 4px 0 0 4px;
+  box-shadow: inset -4px 0 10px rgba(60, 35, 15, 0.2);
+}
+
+/* Right Resting Page (Underneath the turning leaves) */
+.rightRestingPage {
+  position: absolute;
+  top: 0;
+  left: 51.8%;
+  width: 48.2%;
+  height: 100%;
+  z-index: 2;
+  overflow: hidden;
+  border-radius: 0 4px 4px 0;
+  box-shadow: inset 4px 0 10px rgba(60, 35, 15, 0.2);
+}
+
+/* Physical 3D Turning Page Leaf */
+.turningLeaf {
+  position: absolute;
+  top: 0;
+  left: 51.8%;
+  width: 48.2%;
+  height: 100%;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  will-change: transform;
+  pointer-events: none;
+}
+
+/* Dynamic Cast Shadow onto Left Page Stack (matches Reference Image 3) */
+.castShadowLeft {
+  position: absolute;
+  top: -4%;
+  right: 100%;
+  width: 100%;
+  height: 108%;
+  transform-origin: right center;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 15;
+  background: linear-gradient(
+    to left,
+    rgba(25, 12, 5, 0.52) 0%,
+    rgba(35, 18, 8, 0.32) 35%,
+    rgba(45, 22, 10, 0.12) 70%,
+    transparent 100%
+  );
+  filter: blur(12px);
+  border-radius: 6px 0 0 6px;
+  will-change: transform, opacity;
+}
+
+/* Dynamic Lift Shadow on Right Stack directly underneath lifting page */
+.liftShadowRight {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 1;
+  background: linear-gradient(
+    to right,
+    rgba(30, 15, 6, 0.36) 0%,
+    rgba(35, 18, 8, 0.2) 40%,
+    transparent 100%
+  );
+  filter: blur(10px);
+  border-radius: 0 6px 6px 0;
+  will-change: opacity;
+}
+
+/* 3D Curvilinear Paper Arch Wrapper */
+.curlWrapper {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+/* Double-Sided Page Faces */
+.pageFace {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+}
+
+.faceFront {
+  transform: rotateY(0deg);
+  border-radius: 0 4px 4px 0;
+  box-shadow: -2px 4px 18px rgba(0, 0, 0, 0.16);
+}
+
+.faceBack {
+  transform: rotateY(180deg);
+  border-radius: 4px 0 0 4px;
+  box-shadow: 2px 4px 18px rgba(0, 0, 0, 0.16);
+}
+
+/* Specular Ridge Highlight on crest of paper cylinder */
+.ridgeHighlight {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 245, 220, 0.28) 45%,
+    rgba(255, 255, 255, 0.38) 52%,
+    rgba(40, 20, 10, 0.22) 75%,
+    transparent 100%
+  );
+  transition: opacity 0.05s linear;
+}
+
+/* Dynamic Page Shading Overlay during 3D Flip */
+.pageShading {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.05s linear;
+}
+
+.pageShading[data-shading="front"] {
+  background: linear-gradient(
+    to right,
+    rgba(60, 35, 10, 0.45) 0%,
+    rgba(60, 35, 10, 0.15) 30%,
+    rgba(255, 255, 255, 0.18) 60%,
+    rgba(40, 20, 5, 0.25) 100%
+  );
+}
+
+.pageShading[data-shading="back"] {
+  background: linear-gradient(
+    to left,
+    rgba(60, 35, 10, 0.45) 0%,
+    rgba(60, 35, 10, 0.15) 30%,
+    rgba(255, 255, 255, 0.18) 60%,
+    rgba(40, 20, 5, 0.25) 100%
+  );
+}
+
+/* Page Interior Canvas */
+.pageInner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #faf0db;
+  overflow: hidden;
+}
+
+/* Background Parchment Texture & Watercolor Floral Border */
+.pageTemplateBg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  pointer-events: none;
+}
+
+/* Central Golden Spiral Binding Rings */
+.spiralSpineWrapper {
+  position: absolute;
+  top: 23.6%;
+  bottom: 16.8%;
+  left: 50%;
+  width: 6.2%;
+  transform: translateX(-50%);
+  z-index: 40;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spiralSpineImg {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  filter: drop-shadow(1px 2px 4px rgba(40, 20, 5, 0.45));
+}
+
+/* ==============================================================================
+ * Left Page Content: Photos, Washi Tape, Stickers, Doodles
+ * ============================================================================== */
+.leftPageContent {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 6% 12% 6% 14%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.photosContainer {
+  display: flex;
+  gap: 14px;
+  justify-content: center;
+  align-items: center;
+  margin-top: 4%;
+}
+
+.polaroid {
+  position: relative;
+  background: #ffffff;
+  padding: 8px 8px 18px 8px;
+  border-radius: 2px;
+  box-shadow: 0 4px 10px rgba(60, 35, 10, 0.18), 0 1px 3px rgba(0, 0, 0, 0.12);
+  width: 44%;
+  transition: transform 0.2s ease-out;
+}
+
+.washiTape {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 48px;
+  height: 16px;
+  border-radius: 1px;
+  opacity: 0.85;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+.washi-pink {
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(244, 114, 182, 0.75),
+    rgba(244, 114, 182, 0.75) 6px,
+    rgba(251, 207, 232, 0.85) 6px,
+    rgba(251, 207, 232, 0.85) 12px
+  );
+}
+
+.washi-gold {
+  background: repeating-linear-gradient(
+    -45deg,
+    rgba(234, 179, 8, 0.75),
+    rgba(234, 179, 8, 0.75) 6px,
+    rgba(254, 240, 138, 0.85) 6px,
+    rgba(254, 240, 138, 0.85) 12px
+  );
+}
+
+.corner-tabs {
+  background: rgba(217, 119, 6, 0.8);
+}
+
+.photoCanvas {
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  border-radius: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.photoDoodle {
+  font-size: 2.2rem;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.polaroidCaption {
+  margin-top: 6px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+
+.polaroidTitle {
+  font-family: 'Caveat', 'Segoe Print', cursive, sans-serif;
+  font-size: 0.95rem;
+  color: #4a2810;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.polaroidDate {
+  font-family: monospace;
+  font-size: 0.7rem;
+  color: #8c603e;
+  margin-top: 2px;
+}
+
+.stickersLayer {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.sticker {
+  position: absolute;
+  font-family: 'Caveat', cursive, sans-serif;
+  font-weight: 700;
+  border-radius: 3px;
+  padding: 3px 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15);
+  font-size: 0.85rem;
+}
+
+.sticker_stamp {
+  border: 1.5px dashed #b45309;
+  background: #fef3c7;
+  color: #92400e;
+  letter-spacing: 1px;
+  font-family: monospace;
+  font-size: 0.7rem;
+}
+
+.sticker_flower {
+  background: #fdf2f8;
+  color: #db2777;
+  border: 1px solid #fbcfe8;
+}
+
+.sticker_heart {
+  background: #ffe4e6;
+  color: #e11d48;
+  font-size: 1.1rem;
+  padding: 2px 6px;
+}
+
+.sticker_botanical {
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #bbf7d0;
+}
+
+.sticker_seal {
+  border-radius: 50%;
+  background: #dc2626;
+  color: #fef2f2;
+  font-weight: 800;
+  font-size: 0.7rem;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #b91c1c;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.handwrittenNotes {
+  margin-top: auto;
+  text-align: center;
+  padding: 4px 8px;
+}
+
+.handwrittenLine {
+  font-family: 'Caveat', 'Segoe Print', cursive, sans-serif;
+  font-size: 1.05rem;
+  color: #5c3516;
+  margin: 2px 0;
+  line-height: 1.3;
+}
+
+/* ==============================================================================
+ * Right Page Content: Chapter Titles, Drop Caps, Story Typography
+ * ============================================================================== */
+.rightPageContent {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  padding: 7% 14% 7% 12%;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-sizing: border-box;
+}
+
+.chapterHeader {
+  border-bottom: 1px solid rgba(180, 130, 70, 0.35);
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+}
+
+.chapterNumber {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 2.5px;
+  color: #925828;
+  font-weight: 600;
+  display: block;
+}
+
+.chapterTitle {
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 1.5rem;
+  color: #3d210c;
+  margin: 3px 0 2px 0;
+  font-weight: 700;
+}
+
+.chapterLocation {
+  font-family: 'Caveat', cursive, sans-serif;
+  font-size: 0.95rem;
+  color: #784824;
+  font-style: italic;
+}
+
+.storyBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.storyParagraph {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.96rem;
+  line-height: 1.62;
+  color: #3b220e;
+  margin: 0;
+  text-align: justify;
+}
+
+.dropCap {
+  float: left;
+  font-family: Georgia, 'Playfair Display', serif;
+  font-size: 3.2rem;
+  line-height: 0.8;
+  padding-top: 4px;
+  padding-right: 8px;
+  padding-left: 2px;
+  color: #993b1d;
+  font-weight: 700;
+}
+
+.signatureBlock {
+  margin-top: auto;
+  text-align: right;
+  padding-top: 6px;
+}
+
+.signatureText {
+  font-family: 'Caveat', 'Segoe Print', cursive, sans-serif;
+  font-size: 1.25rem;
+  color: #7a3a14;
+  font-weight: 600;
+}
+
+/* ==============================================================================
+ * Butterfly Anchor Placeholder
+ * ============================================================================== */
+.butterflyAnchor {
+  position: absolute;
+  bottom: 8%;
+  right: 12%;
+  width: 56px;
+  height: 56px;
+  z-index: 40;
+  pointer-events: none;
+}
+
+/* ==============================================================================
+ * Responsive Scaling & Mobile Adaptations
+ * ============================================================================== */
+@media (max-width: 768px) {
+  .bookStage {
+    width: 96vw;
+    aspect-ratio: 1024 / 682;
+  }
+
+  .chapterTitle {
+    font-size: 1.15rem;
+  }
+
+  .storyParagraph {
+    font-size: 0.78rem;
+    line-height: 1.45;
+  }
+
+  .dropCap {
+    font-size: 2.2rem;
+  }
+
+  .polaroidTitle {
+    font-size: 0.75rem;
+  }
+
+  .handwrittenLine {
+    font-size: 0.82rem;
+  }
+
+  .photoDoodle {
+    font-size: 1.6rem;
+  }
+}

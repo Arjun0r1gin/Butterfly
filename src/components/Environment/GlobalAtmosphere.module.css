@@ -1,0 +1,14 @@
+/**
+ * BUTTERFLY — Global Atmosphere Canvas Stylesheet
+ */
+
+.atmosphereCanvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5; /* Sits above panoramic background (z: 2), below book (z: 10/20) and butterfly (z: 35) */
+  will-change: transform;
+}
+

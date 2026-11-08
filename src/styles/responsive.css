@@ -1,0 +1,44 @@
+/**
+ * BUTTERFLY — Responsive Utilities & Accessibility (Reduced Motion)
+ */
+
+/* --------------------------------------------------
+ * Breakpoint Tokens (for documentation & reference)
+ * --------------------------------------------------
+ * Mobile:       < 640px
+ * Tablet:       640px - 1024px
+ * Desktop:      1025px - 1440px
+ * Ultra-wide:   > 1440px
+ */
+
+/* Responsive scene wrapper */
+.scene-container {
+  position: relative;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  contain: layout paint;
+}
+
+/* Reduced Motion Mode */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animated-element {
+    transform: none !important;
+    opacity: 1 !important;
+  }
+}
+

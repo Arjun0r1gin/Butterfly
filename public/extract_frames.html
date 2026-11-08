@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Extract Frames via Playback</title>
+</head>
+<body style="margin: 0; background: #000; color: #fff; font-family: monospace; padding: 20px;">
+  <h2 id="status">Initializing...</h2>
+  <video id="vid" src="/reference_video.mp4" playsinline muted preload="auto" style="width: 288px; height: 640px; border: 1px solid #444;"></video>
+  <canvas id="cvs" style="display:none;"></canvas>
+
+  <script>
+    const statusDiv = document.getElementById('status');
+    const video = document.getElementById('vid');
+    const canvas = document.getElementById('cvs');
+    const ctx = canvas.getContext('2d');
+
+    const targets = [
+      0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 
+      5.5, 6.0, 6.5, 7.0, 7.5, 8.0, 8.5, 9.0, 9.5, 10.0, 10.5, 
+      11.0, 11.5, 12.0, 12.5, 13.0, 13.5
+    ];
+    let targetIdx = 0;
+
+    async function run() {
+      try {
+        statusDiv.innerText = "Loading video...";
+        await new Promise(r => {
+          if (video.readyState >= 2) r();
+          else video.onloadeddata = r;
+        });
+
+        canvas.width = video.videoWidth || 576;
+        canvas.height = video.videoHeight || 1280;
+        statusDiv.innerText = `Video ready: ${canvas.width}x${canvas.height}, starting playback...`;
+
+        video.playbackRate = 1.0;
+        await video.play();
+
+        async function onFrame(now, metadata) {
+          const t = video.currentTime;
+          statusDiv.innerText = `Playing: t=${t.toFixed(2)}s (target ${targetIdx}/${targets.length}: ${targets[targetIdx]}s)`;
+
+          if (targetIdx < targets.length && t >= targets[targetIdx]) {
+            const currentTarget = targets[targetIdx];
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/png');
+            const name = `frame_${String(targetIdx).padStart(2, '0')}_t${currentTarget.toFixed(1).replace('.', 's')}`;
+            
+            // advance target before fetch
+            targetIdx++;
+
+            await fetch(`/save_frame?name=${name}`, {
+              method: 'POST',
+              body: dataUrl
+            });
+
+            if (targetIdx >= targets.length) {
+              video.pause();
+              statusDiv.innerText = "All frames captured! Sending done...";
+              await fetch('/done', { method: 'POST' });
+              statusDiv.innerText = "ALL DONE!";
+              return;
+            }
+          }
+
+          if (!video.paused && !video.ended) {
+            if ('requestVideoFrameCallback' in video) {
+              video.requestVideoFrameCallback(onFrame);
+            } else {
+              requestAnimationFrame(() => onFrame(performance.now(), {}));
+            }
+          }
+        }
+
+        if ('requestVideoFrameCallback' in video) {
+          video.requestVideoFrameCallback(onFrame);
+        } else {
+          requestAnimationFrame(() => onFrame(performance.now(), {}));
+        }
+
+        video.onended = async () => {
+          if (targetIdx < targets.length) {
+            // capture final frame
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/png');
+            const name = `frame_${String(targetIdx).padStart(2, '0')}_t_final`;
+            await fetch(`/save_frame?name=${name}`, { method: 'POST', body: dataUrl });
+          }
+          await fetch('/done', { method: 'POST' });
+        };
+      } catch (err) {
+        statusDiv.innerText = "Error: " + err.message;
+        console.error(err);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', run);
+  </script>
+</body>
+</html>

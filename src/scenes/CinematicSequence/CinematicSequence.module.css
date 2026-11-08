@@ -1,0 +1,340 @@
+/**
+ * BUTTERFLY — Fixed Full-Screen Cinematic Sequence Stylesheet
+ * Orchestrates:
+ * 1. Fixed full-screen viewport with virtual scroll progress
+ * 2. Three vertically arranged scenes (Scene 1: Garden -> Scene 2: Pergola & Storybook -> Scene 3: Rocket)
+ * 3. Single continuous persistent Butterfly character flying across all three scenes
+ * 4. Interactive 3D physical Storybook in Scene 2
+ * 5. Smooth vertical transitions with zero seams or blank gaps
+ */
+
+.sequenceContainer {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: #120703; /* Deep sunset night sky foundation */
+  isolation: isolate;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+/* Master Fixed Viewport Container */
+.pinnedStage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+/* ==============================================================================
+ * Layer 1: Continuous Panoramic Magical Garden World
+ * Single unbroken panoramic environment covering Meadow -> Pergola -> Rocket
+ * ============================================================================== */
+.panoramicWorldContainer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100vh;
+  height: 100dvh;
+  width: max(calc(100vh * 3.656), 220vw);
+  pointer-events: none;
+  will-change: transform, opacity;
+  transform: translate3d(0, 0, 0);
+  z-index: 2;
+}
+
+.panoramicBackground {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: left center;
+  image-rendering: high-quality;
+  image-rendering: -webkit-optimize-contrast;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* Subtle atmospheric sun glow above the meadow */
+.panoramicSunGlow {
+  position: absolute;
+  top: 48%;
+  left: 24%;
+  width: 45vmax;
+  height: 45vmax;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    circle,
+    rgba(255, 235, 180, 0.28) 0%,
+    rgba(255, 160, 50, 0.15) 30%,
+    rgba(240, 100, 30, 0.05) 55%,
+    transparent 70%
+  );
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  pointer-events: none;
+}
+
+/* ==============================================================================
+ * Layer 2: Flower Tunnel Opening Canvas
+ * ============================================================================== */
+.tunnelLayer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 25;
+  pointer-events: none;
+  will-change: opacity;
+}
+
+/* ==============================================================================
+ * Layer 3: Butterfly Floating Layer (Persistent Single Character)
+ * ============================================================================== */
+.butterflyFlightTrack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 35;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.butterflyActor {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  will-change: transform, opacity;
+  pointer-events: none;
+}
+
+/* ==============================================================================
+ * Layer 4: Physical Memory Book Anchored in World Coordinates
+ * Renders:
+ * - A: Physical Walnut Leather Closed Book with Botanical Foil & Brass Clasps
+ * - B: 3D Hinged Cover Leaf pivoting open around left spiral binding
+ * - C: High-Impact Three.js Inextensible Cylinder Page-Curl Engine
+ * ============================================================================== */
+.worldBookAnchor {
+  position: absolute;
+  top: 50%;
+  left: calc(0.52 * (100% - 100vw) + 50vw);
+  transform: translate(-50%, -50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Closed / Opening Physical Leather Book Stage */
+.closedBookStage {
+  position: relative;
+  width: min(440px, 46vw);
+  aspect-ratio: 760 / 860;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1600px;
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+  z-index: 2;
+}
+
+.closedBookBase {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.closedBookBaseImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 20px 35px rgba(12, 6, 2, 0.65));
+}
+
+/* 3D Hinged Cover Leaf pivoting along left spine */
+.hingedCoverWrapper {
+  position: absolute;
+  top: 4.8%;
+  left: 7.2%;
+  width: 90%;
+  height: 90.5%;
+  transform-origin: 3% center;
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.coverFaceFront,
+.coverFaceBack {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+.coverFaceBack {
+  transform: rotateY(180deg);
+}
+
+.coverFaceImg {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  display: block;
+}
+
+.slidingBrassClasp {
+  position: absolute;
+  top: 46%;
+  right: -14px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #ffeaa7 0%, #d4a017 60%, #8c5b05 100%);
+  border: 2px solid #5a3508;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.45);
+  transition: transform 0.25s ease, opacity 0.25s ease;
+  pointer-events: none;
+}
+
+/* ==============================================================================
+ * Layer 4: Centered Open Storybook Stage in Fixed Viewport
+ * 100% perfectly centered horizontally (50% vw) and vertically (50% vh)
+ * Balanced left and right margins (~7% vw each side)
+ * Responsive sizing: targets 82-88% viewport width while preserving 852:442 aspect ratio
+ * Zero clipping of cover, pages, or 3D page-curl geometry
+ * ============================================================================== */
+.openBookCenteredStage {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: min(86vw, calc(84vh * 1.928));
+  height: calc(min(86vw, calc(84vh * 1.928)) / 1.928);
+  max-width: 1440px;
+  max-height: 84vh;
+  aspect-ratio: 852 / 442;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  will-change: opacity, transform;
+  filter: drop-shadow(0 24px 50px rgba(18, 8, 3, 0.65));
+}
+
+.bookButterflyAnchor {
+  position: absolute;
+  top: 6%;
+  right: 6%;
+  width: 60px;
+  height: 60px;
+  pointer-events: none;
+  z-index: 40;
+}
+
+/* Rocket landing anchor in Scene 3 */
+.rocketButterflyAnchor {
+  position: absolute;
+  top: 45%;
+  right: 17%;
+  width: 60px;
+  height: 60px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ==============================================================================
+ * Floating Dynamic Scroll Hint Indicator
+ * ============================================================================== */
+.scrollHint {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  color: #fffaf0;
+  font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
+  font-size: 0.95rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgba(45, 25, 15, 0.70);
+  border: 1px solid rgba(255, 215, 120, 0.25);
+  backdrop-filter: blur(8px);
+  padding: 8px 22px;
+  border-radius: 20px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  pointer-events: none;
+  opacity: 0;
+  will-change: opacity, transform;
+  transition: opacity 0.4s ease;
+}
+
+.scrollHintArrow {
+  display: inline-block;
+  font-size: 1.15rem;
+  color: #ffda79;
+  animation: bounceRight 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes bounceRight {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(6px);
+  }
+}
+
+/* ==============================================================================
+ * Responsive Scaling & Mobile Cropping
+ * ============================================================================== */
+@media (max-width: 1024px) {
+  .openBookCenteredStage {
+    width: min(90vw, calc(84vh * 1.928));
+    height: calc(min(90vw, calc(84vh * 1.928)) / 1.928);
+  }
+}
+
+@media (max-width: 768px) {
+  .scene3Background {
+    object-position: 74% center; /* Keep the Rocket prominently centered on mobile */
+  }
+
+  .openBookCenteredStage {
+    width: min(94vw, calc(82vh * 1.928));
+    height: calc(min(94vw, calc(82vh * 1.928)) / 1.928);
+  }
+
+  .closedBookStage {
+    width: min(340px, 68vw);
+  }
+
+  .scrollHint {
+    font-size: 0.8rem;
+    bottom: 16px;
+    padding: 6px 14px;
+  }
+}

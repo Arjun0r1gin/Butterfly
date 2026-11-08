@@ -1,0 +1,30 @@
+@import './tokens.css';
+@import './layers.css';
+@import './reset.css';
+@import './responsive.css';
+
+/* --------------------------------------------------
+ * Application Scaffolding
+ * -------------------------------------------------- */
+#root {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background-color: #f7a049;
+}
+
+.experience-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background-color: #f7a049;
+}
+

@@ -1,0 +1,713 @@
+{
+  "total": 16,
+  "pass": 5,
+  "warning": 0,
+  "fail": 11,
+  "images": {
+    "Delicate Peach Coral Watercolor Bloom.png": {
+      "filename": "Delicate Peach Coral Watercolor Bloom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 1676.6,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "100% edge pixels black (brightness 1)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 100% edge pixels black (brightness 1)"
+      ]
+    },
+    "Golden Ruffled Watercolor Bloom.png": {
+      "filename": "Golden Ruffled Watercolor Bloom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 1709.3,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "100% edge pixels black (brightness 0)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 100% edge pixels black (brightness 0)"
+      ]
+    },
+    "Golden Yellow Watercolor Blossom.png": {
+      "filename": "Golden Yellow Watercolor Blossom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGBA",
+      "file_size_kb": 1918.0,
+      "has_alpha": true,
+      "alpha_analysis": {
+        "alpha_mean": 171.56,
+        "alpha_min": 0,
+        "alpha_max": 255,
+        "fully_opaque": 147,
+        "fully_opaque_pct": 0.01,
+        "fully_transparent": 473544,
+        "fully_transparent_pct": 30.1,
+        "semi_transparent": 1099397,
+        "semi_transparent_pct": 69.89,
+        "total_pixels": 1573088
+      },
+      "background_type": "transparent",
+      "background_detail": "Corners 100% transparent",
+      "centering": {
+        "centered": true,
+        "coverage": 98.78,
+        "bbox": [
+          0,
+          0,
+          1296,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 1.2,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "PASS",
+      "reasons": []
+    },
+    "Golden-Centered Ivory Watercolor Blossom.png": {
+      "filename": "Golden-Centered Ivory Watercolor Blossom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 1680.8,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "99% edge pixels black (brightness 2)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 99% edge pixels black (brightness 2)"
+      ]
+    },
+    "Luminous Blue and Lavender Watercolor Bloom.png": {
+      "filename": "Luminous Blue and Lavender Watercolor Bloom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGBA",
+      "file_size_kb": 1901.3,
+      "has_alpha": true,
+      "alpha_analysis": {
+        "alpha_mean": 167.58,
+        "alpha_min": 0,
+        "alpha_max": 255,
+        "fully_opaque": 168,
+        "fully_opaque_pct": 0.01,
+        "fully_transparent": 502581,
+        "fully_transparent_pct": 31.95,
+        "semi_transparent": 1070339,
+        "semi_transparent_pct": 68.04,
+        "total_pixels": 1573088
+      },
+      "background_type": "transparent",
+      "background_detail": "Corners 100% transparent",
+      "centering": {
+        "centered": true,
+        "coverage": 99.52,
+        "bbox": [
+          0,
+          3,
+          1309,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.2,
+          "top": 0.3,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "PASS",
+      "reasons": []
+    },
+    "Luminous Watercolor Bloom on Black-1.png": {
+      "filename": "Luminous Watercolor Bloom on Black-1.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGBA",
+      "file_size_kb": 1935.5,
+      "has_alpha": true,
+      "alpha_analysis": {
+        "alpha_mean": 159.45,
+        "alpha_min": 0,
+        "alpha_max": 255,
+        "fully_opaque": 211,
+        "fully_opaque_pct": 0.01,
+        "fully_transparent": 551792,
+        "fully_transparent_pct": 35.08,
+        "semi_transparent": 1021085,
+        "semi_transparent_pct": 64.91,
+        "total_pixels": 1573088
+      },
+      "background_type": "transparent",
+      "background_detail": "Corners 100% transparent",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "PASS",
+      "reasons": []
+    },
+    "Magenta Rose with Golden Stamens.png": {
+      "filename": "Magenta Rose with Golden Stamens.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 2304.5,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "100% edge pixels black (brightness 0)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 100% edge pixels black (brightness 0)"
+      ]
+    },
+    "Mint and Cream Watercolor Blossom.png": {
+      "filename": "Mint and Cream Watercolor Blossom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 1925.4,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "100% edge pixels black (brightness 0)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 100% edge pixels black (brightness 0)"
+      ]
+    },
+    "Pastel Watercolor Bloom on Black.png": {
+      "filename": "Pastel Watercolor Bloom on Black.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 2035.6,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "100% edge pixels black (brightness 1)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 100% edge pixels black (brightness 1)"
+      ]
+    },
+    "Radiant Magenta Watercolor Blossom.png": {
+      "filename": "Radiant Magenta Watercolor Blossom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 2150.3,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "100% edge pixels black (brightness 0)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 100% edge pixels black (brightness 0)"
+      ]
+    },
+    "Translucent Pink Peach Watercolor Blossom.png": {
+      "filename": "Translucent Pink Peach Watercolor Blossom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGBA",
+      "file_size_kb": 1396.2,
+      "has_alpha": true,
+      "alpha_analysis": {
+        "alpha_mean": 120.68,
+        "alpha_min": 0,
+        "alpha_max": 255,
+        "fully_opaque": 175,
+        "fully_opaque_pct": 0.01,
+        "fully_transparent": 736819,
+        "fully_transparent_pct": 46.84,
+        "semi_transparent": 836094,
+        "semi_transparent_pct": 53.15,
+        "total_pixels": 1573088
+      },
+      "background_type": "transparent",
+      "background_detail": "Corners 100% transparent",
+      "centering": {
+        "centered": true,
+        "coverage": 98.52,
+        "bbox": [
+          0,
+          15,
+          1309,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.2,
+          "top": 1.3,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "PASS",
+      "reasons": []
+    },
+    "Vibrant Orange Watercolor Bloom.png": {
+      "filename": "Vibrant Orange Watercolor Bloom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 1933.6,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "99% edge pixels black (brightness 1)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 99% edge pixels black (brightness 1)"
+      ]
+    },
+    "Watercolor Coral Peony Bloom-2.png": {
+      "filename": "Watercolor Coral Peony Bloom-2.png",
+      "readable": true,
+      "width": 1536,
+      "height": 1024,
+      "mode": "RGBA",
+      "file_size_kb": 2462.2,
+      "has_alpha": true,
+      "alpha_analysis": {
+        "alpha_mean": 170.56,
+        "alpha_min": 0,
+        "alpha_max": 255,
+        "fully_opaque": 824815,
+        "fully_opaque_pct": 52.44,
+        "fully_transparent": 509629,
+        "fully_transparent_pct": 32.4,
+        "semi_transparent": 238420,
+        "semi_transparent_pct": 15.16,
+        "total_pixels": 1572864
+      },
+      "background_type": "transparent",
+      "background_detail": "Corners 94% transparent",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1536,
+          1024
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "PASS",
+      "reasons": []
+    },
+    "Watercolor Crimson Camellia Glow.png": {
+      "filename": "Watercolor Crimson Camellia Glow.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 2161.0,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "100% edge pixels black (brightness 0)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 100% edge pixels black (brightness 0)"
+      ]
+    },
+    "Watercolor Lavender Bloom.png": {
+      "filename": "Watercolor Lavender Bloom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 2051.6,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "100% edge pixels black (brightness 0)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 100% edge pixels black (brightness 0)"
+      ]
+    },
+    "Watercolor Peach and Ivory Blossom.png": {
+      "filename": "Watercolor Peach and Ivory Blossom.png",
+      "readable": true,
+      "width": 1312,
+      "height": 1199,
+      "mode": "RGB",
+      "file_size_kb": 1766.8,
+      "has_alpha": false,
+      "alpha_analysis": {
+        "alpha_mean": 255.0,
+        "alpha_min": 255,
+        "alpha_max": 255,
+        "fully_opaque": 1573088,
+        "fully_opaque_pct": 100.0,
+        "fully_transparent": 0,
+        "fully_transparent_pct": 0.0,
+        "semi_transparent": 0,
+        "semi_transparent_pct": 0.0,
+        "total_pixels": 1573088
+      },
+      "background_type": "black_background",
+      "background_detail": "98% edge pixels black (brightness 4)",
+      "centering": {
+        "centered": true,
+        "coverage": 100.0,
+        "bbox": [
+          0,
+          0,
+          1312,
+          1199
+        ],
+        "margins": {
+          "left": 0.0,
+          "right": 0.0,
+          "top": 0.0,
+          "bottom": 0.0
+        },
+        "issues": []
+      },
+      "status": "FAIL",
+      "reasons": [
+        "No alpha channel (RGB only)",
+        "Baked black_background: 98% edge pixels black (brightness 4)"
+      ]
+    }
+  }
+}

@@ -1,0 +1,32 @@
+.finalScene {
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.backgroundLayer {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-background);
+}
+
+.contentLayer {
+  position: relative;
+  z-index: var(--z-scene-mid);
+  width: 100%;
+  max-width: var(--content-max-width);
+  margin: 0 auto;
+  padding: 0 var(--space-md);
+}
+
+.foregroundLayer {
+  position: absolute;
+  inset: 0;
+  z-index: var(--z-scene-foreground);
+  pointer-events: none;
+}
+
