@@ -10,7 +10,6 @@
 import { useRef, useEffect, memo } from 'react';
 import { SceneContainer } from '../../components/common/SceneContainer';
 import { SCENE_IDS } from '../../utils/constants';
-import { GiftBox } from './GiftBox';
 import { FlowerTunnelRenderer } from './flowerRenderer';
 import { FlowerAssetCache, type LoadedFlowerSprite } from './flowerRegistry';
 import {
@@ -24,7 +23,7 @@ import styles from './FlowerTunnel.module.css';
 
 export interface FlowerTunnelProps {
   className?: string;
-  autoPlay?: boolean;
+  isStarted?: boolean;
   onComplete?: () => void;
   onProgress?: (progress: number) => void;
   onStateUpdate?: (state: SequenceTimelineState) => void;
@@ -32,6 +31,7 @@ export interface FlowerTunnelProps {
 
 export const FlowerTunnel = memo(function FlowerTunnel({
   className = '',
+  isStarted = true,
   onComplete,
   onProgress,
   onStateUpdate,
@@ -55,6 +55,17 @@ export const FlowerTunnel = memo(function FlowerTunnel({
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const isTabVisibleRef = useRef<boolean>(true);
+
+  // Synchronize playback with isStarted state
+  useEffect(() => {
+    if (timelineRef.current) {
+      if (isStarted) {
+        timelineRef.current.play();
+      } else {
+        timelineRef.current.pause();
+      }
+    }
+  }, [isStarted]);
 
   // Animation timeline state: strictly mutated by GSAP, never triggering React re-renders
   const stateRef = useRef<SequenceTimelineState>({
@@ -103,15 +114,8 @@ export const FlowerTunnel = memo(function FlowerTunnel({
       const startTime = performance.now();
       const tl = createTunnelMasterTimeline(stateRef.current, {
         config: DEFAULT_TUNNEL_CONFIG,
+        paused: !isStarted,
         onUpdate: (currentState) => {
-          // Direct DOM style updates for gift box: zero React reconciliation cost
-          if (giftBoxRef.current) {
-            const gb = giftBoxRef.current;
-            gb.style.opacity = currentState.giftBoxOpacity.toString();
-            gb.style.transform = `scale(${currentState.giftBoxScale}) rotate(${currentState.giftBoxRotation}deg)`;
-            gb.style.display = currentState.giftBoxOpacity <= 0.001 ? 'none' : 'block';
-          }
-
           // Direct DOM style updates for opening pastel background (fades out behind opaque flower blanket)
           if (backgroundRef.current) {
             backgroundRef.current.style.opacity = currentState.backgroundOpacity.toString();
@@ -323,11 +327,6 @@ export const FlowerTunnel = memo(function FlowerTunnel({
 
       {/* High-Performance Canvas 2D Flower Tunnel Layer */}
       <canvas ref={canvasRef} className={styles.canvas} aria-hidden="true" />
-
-      {/* Step 2 & 3: Illustrated Pink Gift Box */}
-      <div className={styles.giftBoxCenter}>
-        <GiftBox ref={giftBoxRef} />
-      </div>
     </SceneContainer>
   );
 });

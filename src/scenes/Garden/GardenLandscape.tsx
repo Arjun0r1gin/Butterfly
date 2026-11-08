@@ -5,6 +5,7 @@
  */
 
 import { memo } from 'react';
+import { assetUrl } from '../../utils/assets';
 import styles from './Garden.module.css';
 
 export interface GardenLandscapeProps {
@@ -18,7 +19,7 @@ export const GardenLandscape = memo(function GardenLandscape({
     <div className={`${styles.landscapeContainer} ${className}`.trim()} aria-hidden="true">
       {/* Foundational Master Environment — guaranteed fallback */}
       <img
-        src="/garden/garden_base_master.png"
+        src={assetUrl('/garden/garden_base_master.png')}
         alt="Watercolor sunset garden meadow"
         className={styles.masterEnvironment}
         data-parallax="base"
@@ -29,7 +30,7 @@ export const GardenLandscape = memo(function GardenLandscape({
       {/* Discrete Depth Planes for Vertical Camera Movement */}
       {/* Depth 1: Sky & Horizon */}
       <img
-        src="/garden/layer_1_sky.png"
+        src={assetUrl('/garden/layer_1_sky.png')}
         alt=""
         className={styles.parallaxLayer}
         data-parallax="sky"
@@ -39,7 +40,7 @@ export const GardenLandscape = memo(function GardenLandscape({
 
       {/* Depth 2: Distant Mountains & Purple Hills */}
       <img
-        src="/garden/layer_3_distant_hills.png"
+        src={assetUrl('/garden/layer_3_distant_hills.png')}
         alt=""
         className={styles.parallaxLayer}
         data-parallax="hills"
@@ -49,7 +50,7 @@ export const GardenLandscape = memo(function GardenLandscape({
 
       {/* Depth 3: Midground Golden Meadow & Flowering Pink Tree */}
       <img
-        src="/garden/layer_4_midground_meadow.png"
+        src={assetUrl('/garden/layer_4_midground_meadow.png')}
         alt=""
         className={styles.parallaxLayer}
         data-parallax="meadow"
@@ -59,7 +60,7 @@ export const GardenLandscape = memo(function GardenLandscape({
 
       {/* Depth 4: Mossy Boulders */}
       <img
-        src="/garden/layer_5_midground_rocks.png"
+        src={assetUrl('/garden/layer_5_midground_rocks.png')}
         alt=""
         className={styles.parallaxLayer}
         data-parallax="rocks"
@@ -69,7 +70,7 @@ export const GardenLandscape = memo(function GardenLandscape({
 
       {/* Depth 5: Foreground Wildflowers, Daisies & Hibiscus */}
       <img
-        src="/garden/layer_6_foreground_flora.png"
+        src={assetUrl('/garden/layer_6_foreground_flora.png')}
         alt=""
         className={styles.parallaxLayer}
         data-parallax="flora"

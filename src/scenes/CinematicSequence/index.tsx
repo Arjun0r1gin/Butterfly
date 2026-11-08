@@ -17,8 +17,10 @@
 import { useRef, memo, useCallback, useState, useEffect } from 'react';
 import { SceneContainer } from '../../components/common/SceneContainer';
 import { SCENE_IDS } from '../../utils/constants';
+import { assetUrl } from '../../utils/assets';
 import { FlowerTunnel } from '../FlowerTunnel';
-import { Butterfly } from '../../components/Butterfly';
+import { Butterfly, ButterflyGlitterTrail } from '../../components/Butterfly';
+import { OpeningEnvelope } from '../OpeningEnvelope/OpeningEnvelope';
 import { STORYBOOK_SPREADS } from '../Storybook/storybookData';
 import { ThreePageFlipPrototype } from '../Storybook/ThreePageFlipPrototype';
 import { GlobalAtmosphere, type EnvState } from '../../components/Environment/GlobalAtmosphere';
@@ -139,7 +141,7 @@ export function getRocketTipLandingCoords(vw: number, vh: number) {
   const tipScreenX = tipContX - maxPanX;
   const tipScreenY = tipContY;
 
-  const feetOffsetPx = 28;
+  const feetOffsetPx = 36;
   const landingScreenY = tipScreenY - feetOffsetPx;
 
   return {
@@ -233,9 +235,19 @@ export const CinematicSequence = memo(function CinematicSequence({
   const isWorldRevealedRef = useRef(isDirectMode);
   // Opening scroll lock: strictly locks wheel/touch/key inputs while opening flower animation plays
   const isScrollLockedRef = useRef(!isGardenDirect);
+  const [isEnvelopeOpened, setIsEnvelopeOpened] = useState(isGardenDirect);
+  const [showOpeningEnvelope, setShowOpeningEnvelope] = useState(!isGardenDirect);
   const [isLandedOnTip, setIsLandedOnTip] = useState(false);
   const isLandedOnTipRef = useRef(false);
   const applyFrameRef = useRef<((p: number) => void) | null>(null);
+
+  const handleEnvelopeOpen = useCallback(() => {
+    setIsEnvelopeOpened(true);
+  }, []);
+
+  const handleEnvelopeFinished = useCallback(() => {
+    setShowOpeningEnvelope(false);
+  }, []);
 
   const envStateRef = useRef<EnvState>({
     progress: 0,
@@ -633,7 +645,7 @@ export const CinematicSequence = memo(function CinematicSequence({
           style={{ opacity: isDirectMode ? 1 : 0 }}
         >
           <img
-            src="/scenes/seamless_garden_panorama_hd.jpg"
+            src={assetUrl('/scenes/seamless_garden_panorama_hd.jpg')}
             alt="The Continuous Magical Sunset Garden"
             className={styles.panoramicBackground}
           />
@@ -656,15 +668,30 @@ export const CinematicSequence = memo(function CinematicSequence({
           <div id="storybook-butterfly-anchor" className={styles.bookButterflyAnchor} />
         </div>
 
-        {/* Layer 3: Opening Flower Tunnel Canvas (Auto-plays on initial load, then hands over) */}
+        {/* Layer 3: Opening Flower Tunnel Canvas (Starts immediately when envelope is opened) */}
         {!isGardenDirect && (
           <div ref={tunnelLayerRef} className={styles.tunnelLayer}>
             <FlowerTunnel
+              isStarted={isEnvelopeOpened}
               onStateUpdate={handleTunnelStateUpdate}
               onComplete={handleTunnelComplete}
             />
           </div>
         )}
+
+        {/* Layer 3.5: Opening Envelope Overlay */}
+        {showOpeningEnvelope && (
+          <OpeningEnvelope
+            onOpen={handleEnvelopeOpen}
+            onFinished={handleEnvelopeFinished}
+          />
+        )}
+
+        {/* Layer 3.8: Golden Glitter Trail Following Butterfly Flight Path */}
+        <ButterflyGlitterTrail
+          butterflyRef={butterflyActorRef}
+          isHovering={isHoveringWing}
+        />
 
         {/* Layer 4: Butterfly Character (The persistent single traveler across the garden) */}
         <div className={styles.butterflyFlightTrack}>

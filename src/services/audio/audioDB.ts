@@ -4,6 +4,8 @@
  * Supports track duration extraction, renaming, deletion, and on-demand object URL streaming.
  */
 
+import { assetUrl } from '../../utils/assets';
+
 export interface AudioTrack {
   id: string;
   name: string;        // Display name, e.g. "Our Evening ♡"
@@ -143,6 +145,16 @@ export async function saveAudioTrack(
  * Retrieves all saved audio tracks (metadata only)
  */
 export async function getAllAudioTracks(): Promise<AudioTrack[]> {
+  const sampleTrack: AudioTrack = {
+    id: 'sample_our_evening',
+    name: 'Our Evening ♡',
+    fileName: 'our_evening_melody.mp3',
+    type: 'audio/mpeg',
+    size: 1587644,
+    duration: 18,
+    createdAt: 1731070000000,
+  };
+
   try {
     const db = await openAudioDB();
     return new Promise((resolve, reject) => {
@@ -161,14 +173,20 @@ export async function getAllAudioTracks(): Promise<AudioTrack[]> {
           duration: r.duration,
           createdAt: r.createdAt,
         }));
+
+        // Include sample track if not overridden
+        if (!metadataList.some((t) => t.id === 'sample_our_evening')) {
+          metadataList.unshift(sampleTrack);
+        }
+
         resolve(metadataList);
       };
 
       req.onerror = () => reject(req.error || new Error('Failed to load audio tracks'));
     });
   } catch (err) {
-    console.warn('[audioDB] getAllAudioTracks failed, returning empty', err);
-    return [];
+    console.warn('[audioDB] getAllAudioTracks failed, returning sample', err);
+    return [sampleTrack];
   }
 }
 
@@ -176,6 +194,18 @@ export async function getAllAudioTracks(): Promise<AudioTrack[]> {
  * Retrieves a single audio track metadata
  */
 export async function getAudioTrack(id: string): Promise<AudioTrack | null> {
+  if (id === 'sample_our_evening' || id === 'm_whispering_garden') {
+    return {
+      id: 'sample_our_evening',
+      name: 'Our Evening ♡',
+      fileName: 'our_evening_melody.mp3',
+      type: 'audio/mpeg',
+      size: 1587644,
+      duration: 18,
+      createdAt: 1731070000000,
+    };
+  }
+
   const db = await openAudioDB();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(STORE_NAME, 'readonly');
@@ -226,6 +256,10 @@ export async function getAudioBlob(id: string): Promise<Blob | null> {
  * Gets or creates an object URL for an audio track (lazy loading on demand)
  */
 export async function getAudioUrl(id: string): Promise<string | null> {
+  if (id === 'sample_our_evening' || id === 'm_whispering_garden') {
+    return assetUrl('/storybook/assets/our_evening_melody.mp3');
+  }
+
   if (urlCache.has(id)) {
     return urlCache.get(id)!;
   }

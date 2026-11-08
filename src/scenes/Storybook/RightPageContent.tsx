@@ -4,12 +4,55 @@
  * blush watercolor highlighter strokes, butterfly doodles, and pressed flower accents.
  */
 
-import { memo } from 'react';
-import type { StoryPageRight } from './types';
+import React, { memo } from 'react';
+import type { StoryPageRight, MusicMarker } from './types';
+import { audioPlayer } from '../../services/audio/audioPlayer';
+import { assetUrl } from '../../utils/assets';
 import styles from './Storybook.module.css';
 
 export interface RightPageContentProps {
   pageData: StoryPageRight;
+}
+
+function renderParagraphWithMusic(para: string, markers?: Record<string, MusicMarker>) {
+  const parts = para.split(/(\[\[music:[a-zA-Z0-9_\-]+\]\][,\.!?;:]*)/g);
+  return parts.map((part, pIdx) => {
+    const match = part.match(/^\[\[music:([a-zA-Z0-9_\-]+)\]\]([,\.!?;:]*)$/);
+    if (!match) return part;
+
+    const markerId = match[1];
+    const punct = match[2] || '';
+    const marker = markers?.[markerId] || {
+      id: markerId,
+      trackId: 'sample_our_evening',
+      title: 'Our Evening ♡',
+      loop: true,
+    };
+
+    return (
+      <React.Fragment key={pIdx}>
+        <button
+          type="button"
+          className={styles.musicNoteBadge}
+          onClick={(e) => {
+            e.stopPropagation();
+            const rect = e.currentTarget.getBoundingClientRect();
+            audioPlayer.playMarker(marker, {
+              x: rect.left + rect.width / 2,
+              y: rect.top,
+            });
+          }}
+          title={marker.title || 'Play music'}
+          aria-label={`Play ${marker.title || 'music'}`}
+        >
+          <span className={styles.musicNoteIcon}>♫</span>
+          <span className={styles.sparkleTop}>✧</span>
+          <span className={styles.sparkleBottom}>✦</span>
+        </button>
+        {punct}
+      </React.Fragment>
+    );
+  });
 }
 
 export const RightPageContent = memo(function RightPageContent({
@@ -27,7 +70,7 @@ export const RightPageContent = memo(function RightPageContent({
     <div className={styles.pageInner} data-side="right">
       {/* Background Warm Aged Parchment */}
       <img
-        src="/storybook/studio_page_blank_right.jpg"
+        src={assetUrl('/storybook/studio_page_blank_right.jpg')}
         alt=""
         className={styles.pageTemplateBg}
         aria-hidden="true"
@@ -35,7 +78,7 @@ export const RightPageContent = memo(function RightPageContent({
 
       {/* Decorative Butterfly Flight Doodle in Top Right */}
       <img
-        src="/storybook/assets/doodle_butterfly.png"
+        src={assetUrl('/storybook/assets/doodle_butterfly.png')}
         alt=""
         className={styles.topRightDoodle}
         aria-hidden="true"
@@ -101,7 +144,7 @@ export const RightPageContent = memo(function RightPageContent({
                 textAlign,
               }}
             >
-              {para}
+              {renderParagraphWithMusic(para, pageData.musicMarkers)}
             </p>
           ))}
         </div>
@@ -131,7 +174,7 @@ export const RightPageContent = memo(function RightPageContent({
 
       {/* Pressed Pink Wildflower Sprig in Bottom Right Corner */}
       <img
-        src="/storybook/assets/flower_pink_sprig.png"
+        src={assetUrl('/storybook/assets/flower_pink_sprig.png')}
         alt=""
         className={styles.bottomRightFlower}
         aria-hidden="true"

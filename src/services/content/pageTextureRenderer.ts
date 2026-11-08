@@ -8,6 +8,8 @@
 import * as THREE from 'three';
 import type { StorySpreadContent, PageLeftContent, PageRightContent, StickerItem } from './types';
 import { getMediaUrl } from './indexedDB';
+import { musicMarkerRegistry } from './musicMarkerRegistry';
+import { assetUrl } from '../../utils/assets';
 
 const PAGE_CANVAS_W = 1024;
 const PAGE_CANVAS_H = 1082; // Matches 390x412 aspect ratio (0.946)
@@ -47,7 +49,7 @@ function loadBaseImage(src: string): Promise<HTMLImageElement> {
       bgCache.set(src, img);
       resolve(img);
     };
-    img.src = src;
+    img.src = assetUrl(src);
   });
 }
 
@@ -62,7 +64,7 @@ async function loadMediaImage(url: string): Promise<HTMLImageElement | null> {
       resolve(img);
     };
     img.onerror = () => resolve(null);
-    img.src = url;
+    img.src = assetUrl(url);
   });
 }
 
@@ -263,13 +265,30 @@ export async function renderLeftPageCanvas(
   await renderStickersOnCanvas(ctx, page.stickers);
 }
 
+function drawSparkle(ctx: CanvasRenderingContext2D, sx: number, sy: number, size: number) {
+  ctx.save();
+  ctx.fillStyle = '#f5ba58';
+  ctx.beginPath();
+  ctx.moveTo(sx, sy - size);
+  ctx.quadraticCurveTo(sx, sy, sx + size, sy);
+  ctx.quadraticCurveTo(sx, sy, sx, sy + size);
+  ctx.quadraticCurveTo(sx, sy, sx - size, sy);
+  ctx.quadraticCurveTo(sx, sy, sx, sy - size);
+  ctx.fill();
+  ctx.restore();
+}
+
 /**
- * Renders a Right Page (Genuine Handwritten Story, Deep Black Ink, Blush Highlighter, Responsive Typography)
+ * Renders a Right Page (Genuine Handwritten Story, Deep Black Ink, Blush Highlighter, Responsive Typography, Inline Music Badges)
  */
 export async function renderRightPageCanvas(
   page: PageRightContent,
-  canvas: HTMLCanvasElement
+  canvas: HTMLCanvasElement,
+  spreadIndex: number = 0
 ): Promise<void> {
+  // Clear any existing hit areas for this spread face before redrawing
+  musicMarkerRegistry.clearSpread(spreadIndex);
+
   const typo = page.typography || {};
   const fontFamily = typo.fontFamily || 'Caveat';
   const fontSize = typo.fontSize || 34;
@@ -362,49 +381,171 @@ export async function renderRightPageCanvas(
     curY += 68;
   }
 
-  // 5. Genuine Long-Form Handwritten Story Body flowing top to bottom
+  // 5. Genuine Long-Form Handwritten Story Body with Inline Music Badges
   const storyParagraphs = page.storyParagraphs || [];
 
   ctx.fillStyle = textColor;
   ctx.font = `${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
-  ctx.textAlign = textAlign;
+  ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
-
-  let alignX = marginX;
-  if (textAlign === 'center') {
-    alignX = marginX + contentW / 2;
-  } else if (textAlign === 'right') {
-    alignX = marginX + contentW;
-  }
 
   // Usable height extends comfortably down the entire page without clipping
   const maxUsableY = PAGE_CANVAS_H - 85;
+  const spaceW = ctx.measureText(' ').width;
+
+  interface TokenWord {
+    type: 'word';
+    text: string;
+    width: number;
+  }
+  interface TokenMusic {
+    type: 'music';
+    markerId: string;
+    width: number;
+    trailingPunct: string;
+    punctWidth: number;
+  }
+  type ParagraphToken = TokenWord | TokenMusic;
 
   storyParagraphs.forEach((para) => {
     if (!para || !para.trim()) return;
-    const words = para.split(/\s+/);
-    let currentLine = '';
 
-    for (let i = 0; i < words.length; i++) {
-      const testLine = currentLine ? `${currentLine} ${words[i]}` : words[i];
-      const metrics = ctx.measureText(testLine);
+    // Tokenize paragraph by music markers [[music:id]][punct] or words
+    const tokenRegex = /(\[\[music:([a-zA-Z0-9_\-]+)\]\])([,\.!?;:]*)|(\S+)/g;
+    const tokens: ParagraphToken[] = [];
+    let match: RegExpExecArray | null;
 
-      if (metrics.width > contentW && currentLine) {
-        if (curY <= maxUsableY) {
-          ctx.fillText(currentLine, alignX, curY);
-          curY += lineHeight;
-        }
-        currentLine = words[i];
-      } else {
-        currentLine = testLine;
+    while ((match = tokenRegex.exec(para)) !== null) {
+      if (match[1]) {
+        const markerId = match[2];
+        const trailingPunct = match[3] || '';
+        const punctWidth = trailingPunct ? ctx.measureText(trailingPunct).width : 0;
+        tokens.push({
+          type: 'music',
+          markerId,
+          width: 44 + punctWidth,
+          trailingPunct,
+          punctWidth,
+        });
+      } else if (match[4]) {
+        const word = match[4];
+        tokens.push({
+          type: 'word',
+          text: word,
+          width: ctx.measureText(word).width,
+        });
       }
     }
 
-    if (currentLine && curY <= maxUsableY) {
-      ctx.fillText(currentLine, alignX, curY);
+    if (tokens.length === 0) return;
+
+    // Line accumulation
+    let currentLineTokens: ParagraphToken[] = [];
+    let currentLineWidth = 0;
+
+    const flushLine = () => {
+      if (currentLineTokens.length === 0 || curY > maxUsableY) return;
+
+      let startX = marginX;
+      if (textAlign === 'center') {
+        startX = marginX + (contentW - currentLineWidth) / 2;
+      } else if (textAlign === 'right') {
+        startX = marginX + contentW - currentLineWidth;
+      }
+
+      let tokenX = startX;
+      for (const tok of currentLineTokens) {
+        if (tok.type === 'word') {
+          ctx.fillStyle = textColor;
+          ctx.font = `${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(tok.text, tokenX, curY);
+          tokenX += tok.width + spaceW;
+        } else if (tok.type === 'music') {
+          const badgeW = 44;
+          const cx = tokenX + badgeW / 2;
+          const cy = curY - fontSize * 0.32;
+          const radius = 17;
+
+          ctx.save();
+          // Warm golden glow
+          ctx.shadowColor = 'rgba(215, 140, 40, 0.45)';
+          ctx.shadowBlur = 8;
+          ctx.shadowOffsetX = 1;
+          ctx.shadowOffsetY = 2;
+
+          // Radial gradient badge
+          const grad = ctx.createRadialGradient(cx - 3, cy - 3, 2, cx, cy, radius);
+          grad.addColorStop(0, '#fef0bc');
+          grad.addColorStop(0.55, '#f5ba58');
+          grad.addColorStop(1, '#db8a2a');
+          ctx.fillStyle = grad;
+          ctx.beginPath();
+          ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Delicate border
+          ctx.strokeStyle = 'rgba(120, 68, 18, 0.5)';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          // Note symbol
+          ctx.shadowColor = 'transparent';
+          ctx.fillStyle = '#17120F';
+          ctx.font = 'bold 20px "Caveat", cursive, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('♫', cx, cy + 1);
+
+          // Playful sparkles
+          drawSparkle(ctx, cx + 18, cy - 13, 5);
+          drawSparkle(ctx, cx - 18, cy + 12, 4);
+
+          ctx.restore();
+
+          // If there is trailing punctuation attached to music note, render it
+          if (tok.trailingPunct) {
+            ctx.fillStyle = textColor;
+            ctx.font = `${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
+            ctx.textAlign = 'left';
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillText(tok.trailingPunct, tokenX + badgeW, curY);
+          }
+
+          // Register hit area in coordinate registry
+          musicMarkerRegistry.register({
+            spreadIndex,
+            markerId: tok.markerId,
+            cx,
+            cy,
+            radius: 22,
+          });
+
+          tokenX += tok.width + spaceW;
+        }
+      }
+
       curY += lineHeight;
+      currentLineTokens = [];
+      currentLineWidth = 0;
+    };
+
+    for (let i = 0; i < tokens.length; i++) {
+      const tok = tokens[i];
+      const addedWidth = currentLineTokens.length === 0 ? tok.width : spaceW + tok.width;
+
+      if (currentLineWidth + addedWidth > contentW && currentLineTokens.length > 0) {
+        flushLine();
+        currentLineTokens = [tok];
+        currentLineWidth = tok.width;
+      } else {
+        currentLineTokens.push(tok);
+        currentLineWidth += addedWidth;
+      }
     }
 
+    flushLine();
     curY += paraSpacing;
   });
 
@@ -545,7 +686,7 @@ export async function createSpreadCanvasTexture(
   if (side === 'left') {
     await renderLeftPageCanvas(spread.leftPage, canvas);
   } else {
-    await renderRightPageCanvas(spread.rightPage, canvas);
+    await renderRightPageCanvas(spread.rightPage, canvas, spread.spreadIndex);
   }
 
   const texture = new THREE.CanvasTexture(canvas);

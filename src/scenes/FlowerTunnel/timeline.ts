@@ -14,6 +14,7 @@ import { prefersReducedMotion } from '../../utils/device';
 
 export interface TimelineOptions {
   config: TunnelConfig;
+  paused?: boolean;
   onUpdate: (state: SequenceTimelineState) => void;
   onComplete?: () => void;
 }
@@ -25,7 +26,7 @@ export function createTunnelMasterTimeline(
   const isReduced = prefersReducedMotion();
 
   const tl = gsap.timeline({
-    paused: false,
+    paused: options.paused ?? false,
     defaults: {
       ease: 'power2.out',
     },
@@ -96,31 +97,15 @@ export function createTunnelMasterTimeline(
     backgroundOpacity: 1.0,
     gardenOpacity: 0.0,
   })
-    // --- STAGE 0: Gift Box Entry & Pop Open ---
-    .to(state, {
-      giftBoxOpacity: 1,
-      giftBoxScale: 1.0,
-      duration: 0.8,
-      ease: 'back.out(1.5)',
-    })
-    .to(state, {
-      giftBoxRotation: 3.0,
-      duration: 0.5,
-      ease: 'sine.inOut',
-      yoyo: true,
-      repeat: 1,
-    })
+    // --- STAGE 0: Envelope Opening Response ---
     .to(state, {
       giftBoxOpacity: 0,
-      giftBoxScale: 1.35,
-      giftBoxRotation: -6,
-      giftBoxDisintegration: 1,
-      duration: 0.45,
-      ease: 'power2.in',
+      duration: 0.15,
+      ease: 'none',
     })
 
     // --- STAGE 1: Circular Swirling Motion & Center Core Bloom ---
-    // Core flowers appear right at the center (r=0), overlapping center completely
+    // Core flowers appear right at the center (r=0), erupting as envelope opens
     .to(
       state,
       {
@@ -129,8 +114,7 @@ export function createTunnelMasterTimeline(
         swirlProgress: 0.45, // Continuous coordinated swirl
         duration: 1.8,
         ease: 'power2.out',
-      },
-      '-=0.2'
+      }
     )
 
     // --- STAGE 2: Viewport Saturation (Center to Corners) ---

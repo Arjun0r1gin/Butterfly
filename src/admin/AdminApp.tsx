@@ -11,10 +11,11 @@ import { Dashboard } from './components/Dashboard';
 import { ScrapbookEditor } from './components/ScrapbookEditor/ScrapbookEditor';
 import { FinalPageEditor } from './components/FinalPageEditor/FinalPageEditor';
 import { MediaLibrary } from './components/MediaLibrary/MediaLibrary';
+import { AudioLibrary } from './components/AudioLibrary/AudioLibrary';
 import { LivePreview } from './components/LivePreview/LivePreview';
 import styles from './Admin.module.css';
 
-type AdminView = 'dashboard' | 'scrapbook' | 'final' | 'media' | 'preview';
+type AdminView = 'dashboard' | 'scrapbook' | 'final' | 'media' | 'audio' | 'preview';
 
 export const AdminApp: React.FC = () => {
   const [activeView, setActiveView] = useState<AdminView>('dashboard');
@@ -223,6 +224,17 @@ export const AdminApp: React.FC = () => {
             <button
               type="button"
               className={`${styles.navItem} ${
+                activeView === 'audio' ? styles.navItemActive : ''
+              }`}
+              onClick={() => setActiveView('audio')}
+            >
+              <span className={styles.navIcon}>🎵</span>
+              <span>Audio Library</span>
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.navItem} ${
                 activeView === 'preview' ? styles.navItemActive : ''
               }`}
               onClick={() => setActiveView('preview')}
@@ -260,6 +272,8 @@ export const AdminApp: React.FC = () => {
           )}
 
           {activeView === 'media' && <MediaLibrary />}
+
+          {activeView === 'audio' && <AudioLibrary />}
 
           {activeView === 'preview' && <LivePreview content={content} />}
         </main>

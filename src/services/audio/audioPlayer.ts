@@ -7,6 +7,7 @@
 
 import { getAudioUrl, getAudioTrack, type AudioTrack } from './audioDB';
 import type { MusicMarker } from '../content/types';
+import { assetUrl } from '../../utils/assets';
 
 export interface AudioPlayerState {
   activeMarkerId: string | null;
@@ -26,7 +27,6 @@ class ScrapbookAudioPlayer {
   private currentMarker: MusicMarker | null = null;
   private currentTrack: AudioTrack | null = null;
   private listeners = new Set<StateListener>();
-  private timeUpdateInterval: number | null = null;
 
   private state: AudioPlayerState = {
     activeMarkerId: null,
@@ -91,6 +91,10 @@ class ScrapbookAudioPlayer {
 
   public getState(): AudioPlayerState {
     return { ...this.state };
+  }
+
+  public getCurrentTrack(): AudioTrack | null {
+    return this.currentTrack;
   }
 
   public subscribe(listener: StateListener): () => void {
@@ -159,7 +163,7 @@ class ScrapbookAudioPlayer {
       if (marker.trackId.startsWith('/') || marker.trackId.startsWith('http')) {
         url = marker.trackId;
       } else if (marker.trackId === 'sample_our_evening' || marker.trackId === 'm_whispering_garden') {
-        url = '/storybook/assets/our_evening_melody.mp3';
+        url = assetUrl('/storybook/assets/our_evening_melody.mp3');
       }
     }
 
@@ -168,7 +172,7 @@ class ScrapbookAudioPlayer {
       return;
     }
 
-    this.audio.src = url;
+    this.audio.src = assetUrl(url);
     this.audio.loop = !!marker.loop;
 
     const start = marker.startTime || 0;

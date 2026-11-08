@@ -7,7 +7,7 @@
  * - Media library integration for PNG, JPG, WebP, and animated GIF insertion
  */
 
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import type {
   ButterflyContent,
   StorySpreadContent,
@@ -16,7 +16,11 @@ import type {
   StickerItem,
   MediaAsset,
   PageTypography,
+  MusicMarker,
 } from '../../../services/content/types';
+import { audioPlayer } from '../../../services/audio/audioPlayer';
+import { getAllAudioTracks, type AudioTrack } from '../../../services/audio/audioDB';
+import { NowPlayingPill } from '../../../components/common/NowPlayingPill';
 import { StickerCanvas } from '../Common/StickerCanvas';
 import { MediaLibrary } from '../MediaLibrary/MediaLibrary';
 import styles from '../../Admin.module.css';
@@ -66,6 +70,19 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
   const activeSpread = content.spreads[activeSpreadIdx] || content.spreads[0];
   const activeLeft = activeSpread.leftPage;
   const activeRight = activeSpread.rightPage;
+
+  const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
+  const [editingMarkerId, setEditingMarkerId] = useState<string | null>(null);
+  const storyTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    getAllAudioTracks().then((tracks) => setAudioTracks(tracks));
+    const handleUpdate = () => {
+      getAllAudioTracks().then((tracks) => setAudioTracks(tracks));
+    };
+    window.addEventListener('butterfly_audio_library_updated', handleUpdate);
+    return () => window.removeEventListener('butterfly_audio_library_updated', handleUpdate);
+  }, []);
 
   // Active page typography & capacity calculations
   const typo = activeRight.typography || {};
@@ -155,6 +172,138 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
       paragraphSpacing: 28,
       textAlign: 'left',
     }));
+  };
+
+  const handleInsertMusicNote = () => {
+    const textarea = storyTextareaRef.current;
+    const markerId = `m_${Date.now()}`;
+    const markerTag = `[[music:${markerId}]]`;
+
+    const currentText = activeRight.storyParagraphs.join('\n\n');
+    let newText = '';
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      newText = currentText.substring(0, start) + ' ' + markerTag + ' ' + currentText.substring(end);
+    } else {
+      newText = currentText + ' ' + markerTag;
+    }
+
+    const paras = newText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    const defaultTrack = audioTracks[0] || {
+      id: 'sample_our_evening',
+      name: 'Our Evening ♡',
+    };
+
+    const newMarker: MusicMarker = {
+      id: markerId,
+      trackId: defaultTrack.id,
+      title: defaultTrack.name,
+      loop: true,
+    };
+
+    updateRightPage((r) => ({
+      ...r,
+      storyParagraphs: paras,
+      musicMarkers: {
+        ...(r.musicMarkers || {}),
+        [markerId]: newMarker,
+      },
+    }));
+
+    setEditingMarkerId(markerId);
+  };
+
+  const handleUpdateMusicMarker = (markerId: string, updates: Partial<MusicMarker>) => {
+    updateRightPage((r) => {
+      const existing = r.musicMarkers?.[markerId] || {
+        id: markerId,
+        trackId: 'sample_our_evening',
+        title: 'Our Evening ♡',
+        loop: true,
+      };
+      return {
+        ...r,
+        musicMarkers: {
+          ...(r.musicMarkers || {}),
+          [markerId]: { ...existing, ...updates },
+        },
+      };
+    });
+  };
+
+  const handleDeleteMusicMarker = (markerId: string) => {
+    const markerTagRegex = new RegExp(`\\[\\[music:${markerId}\\]\\]`, 'g');
+    const cleanedParas = activeRight.storyParagraphs.map((p) =>
+      p.replace(markerTagRegex, '').replace(/\s{2,}/g, ' ').trim()
+    ).filter(Boolean);
+
+    updateRightPage((r) => {
+      const remainingMarkers = { ...(r.musicMarkers || {}) };
+      delete remainingMarkers[markerId];
+      return {
+        ...r,
+        storyParagraphs: cleanedParas,
+        musicMarkers: remainingMarkers,
+      };
+    });
+
+    if (editingMarkerId === markerId) {
+      setEditingMarkerId(null);
+    }
+  };
+
+  const renderPreviewParagraph = (para: string) => {
+    const parts = para.split(/(\[\[music:[a-zA-Z0-9_\-]+\]\][,\.!?;:]*)/g);
+    return parts.map((part, pIdx) => {
+      const match = part.match(/^\[\[music:([a-zA-Z0-9_\-]+)\]\]([,\.!?;:]*)$/);
+      if (!match) return part;
+
+      const markerId = match[1];
+      const punct = match[2] || '';
+      const marker = activeRight.musicMarkers?.[markerId] || {
+        id: markerId,
+        trackId: 'sample_our_evening',
+        title: 'Our Evening ♡',
+        loop: true,
+      };
+
+      return (
+        <span key={pIdx} style={{ display: 'inline-flex', alignItems: 'center' }}>
+          <button
+            type="button"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: '24px',
+              height: '24px',
+              borderRadius: '50%',
+              margin: '0 4px',
+              background: 'radial-gradient(circle at 35% 35%, #fef0bc 0%, #f5ba58 60%, #db8a2a 100%)',
+              border: '1px solid rgba(120, 68, 18, 0.45)',
+              boxShadow: '0 2px 6px rgba(215, 140, 40, 0.45)',
+              cursor: 'pointer',
+              color: '#17120F',
+              fontFamily: 'Caveat, cursive, sans-serif',
+              fontWeight: 700,
+              fontSize: '14px',
+              padding: 0,
+              verticalAlign: 'middle',
+            }}
+            onClick={(e) => {
+              e.stopPropagation();
+              const rect = e.currentTarget.getBoundingClientRect();
+              audioPlayer.playMarker(marker, { x: rect.left + rect.width / 2, y: rect.top });
+            }}
+            title={`Play "${marker.title}" (Click to test audio)`}
+          >
+            ♫
+          </button>
+          {punct}
+        </span>
+      );
+    });
   };
 
   // Sticker updates from canvas
@@ -392,7 +541,7 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                           textAlign: activeAlign,
                         }}
                       >
-                        {para}
+                        {renderPreviewParagraph(para)}
                       </p>
                     ))}
                   </div>
@@ -507,6 +656,7 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                 </div>
               )}
             </StickerCanvas>
+            <NowPlayingPill />
           </div>
           <span style={{ fontSize: '0.78rem', color: 'var(--admin-text-subtle)', textAlign: 'center' }}>
             Tip: Click a sticker to select it. Drag to reposition, use bottom-right corner to resize, top handle to rotate.
@@ -716,13 +866,32 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
 
               {/* Multi-Paragraph Story Narrative Editor */}
               <div className={styles.formGroup}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
                   <label className={styles.formLabel}>Story Narrative (Full-Page Writing)</label>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-subtle)' }}>
-                    Separate paragraphs with empty lines
-                  </span>
+                  <button
+                    type="button"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(229, 189, 117, 0.25), rgba(200, 150, 80, 0.2))',
+                      border: '1px solid var(--admin-gold-primary)',
+                      borderRadius: '6px',
+                      color: 'var(--admin-gold-primary)',
+                      padding: '4px 10px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                    }}
+                    onClick={handleInsertMusicNote}
+                    title="Insert an interactive music note between words or sentences"
+                  >
+                    <span>♫</span>
+                    <span>Insert Music Note</span>
+                  </button>
                 </div>
                 <textarea
+                  ref={storyTextareaRef}
                   className={styles.formTextarea}
                   style={{
                     minHeight: '160px',
@@ -742,6 +911,224 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                   placeholder="Write your story freely across the page. Separate paragraphs with an empty line..."
                 />
               </div>
+
+              {/* Inline Music Markers Configuration Section */}
+              {(() => {
+                const text = activeRight.storyParagraphs.join('\n\n');
+                const matchedIds: string[] = [];
+                const regex = /\[\[music:([a-zA-Z0-9_\-]+)\]\]/g;
+                let m: RegExpExecArray | null;
+                while ((m = regex.exec(text)) !== null) {
+                  if (!matchedIds.includes(m[1])) matchedIds.push(m[1]);
+                }
+                const registeredIds = Object.keys(activeRight.musicMarkers || {});
+                const allMarkerIds = Array.from(new Set([...matchedIds, ...registeredIds]));
+
+                if (allMarkerIds.length === 0) return null;
+
+                return (
+                  <div
+                    style={{
+                      background: 'rgba(25, 18, 12, 0.65)',
+                      border: '1px solid rgba(229, 189, 117, 0.35)',
+                      borderRadius: '8px',
+                      padding: '12px 14px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '10px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span
+                        style={{
+                          fontSize: '0.78rem',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.08em',
+                          color: 'var(--admin-gold-primary)',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                        }}
+                      >
+                        <span>🎵</span>
+                        <span>Inline Music Notes on this Page ({allMarkerIds.length})</span>
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {allMarkerIds.map((mId) => {
+                        const marker = activeRight.musicMarkers?.[mId] || {
+                          id: mId,
+                          trackId: audioTracks[0]?.id || 'sample_our_evening',
+                          title: 'Our Evening ♡',
+                          loop: true,
+                        };
+                        const isSelected = editingMarkerId === mId;
+
+                        return (
+                          <div
+                            key={mId}
+                            style={{
+                              background: isSelected ? 'rgba(229, 189, 117, 0.12)' : 'rgba(0, 0, 0, 0.25)',
+                              border: `1px solid ${isSelected ? 'var(--admin-gold-primary)' : 'rgba(229, 189, 117, 0.2)'}`,
+                              borderRadius: '6px',
+                              padding: '8px 10px',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                            }}
+                          >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <span
+                                  style={{
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    width: '20px',
+                                    height: '20px',
+                                    borderRadius: '50%',
+                                    background: 'radial-gradient(circle, #f5ba58, #db8a2a)',
+                                    color: '#17120F',
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                  }}
+                                >
+                                  ♫
+                                </span>
+                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--admin-text-main)' }}>
+                                  {marker.title || 'Untitled Song'}
+                                </span>
+                                <code style={{ fontSize: '0.68rem', color: 'var(--admin-gold-bright)', opacity: 0.85 }}>
+                                  [[music:{mId}]]
+                                </code>
+                              </div>
+
+                              <div style={{ display: 'flex', gap: '6px' }}>
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: 'rgba(229, 189, 117, 0.2)',
+                                    border: '1px solid var(--admin-border)',
+                                    borderRadius: '4px',
+                                    color: 'var(--admin-gold-primary)',
+                                    padding: '2px 8px',
+                                    fontSize: '0.72rem',
+                                    cursor: 'pointer',
+                                  }}
+                                  onClick={() => audioPlayer.playMarker(marker)}
+                                  title="Test play audio"
+                                >
+                                  ▶ Test
+                                </button>
+                                <button
+                                  type="button"
+                                  style={{
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--admin-danger)',
+                                    fontSize: '0.85rem',
+                                    cursor: 'pointer',
+                                    padding: '0 4px',
+                                  }}
+                                  onClick={() => handleDeleteMusicMarker(mId)}
+                                  title="Delete note"
+                                >
+                                  🗑
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Configuration Fields */}
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
+                              <div>
+                                <label style={{ fontSize: '0.68rem', color: 'var(--admin-text-subtle)', display: 'block', marginBottom: '2px' }}>
+                                  Audio Track
+                                </label>
+                                <select
+                                  className={styles.formInput}
+                                  style={{ padding: '4px 6px', fontSize: '0.78rem' }}
+                                  value={marker.trackId}
+                                  onChange={(e) => {
+                                    const trkId = e.target.value;
+                                    const selectedTrk = audioTracks.find((t) => t.id === trkId);
+                                    handleUpdateMusicMarker(mId, {
+                                      trackId: trkId,
+                                      title: selectedTrk?.name || marker.title,
+                                    });
+                                  }}
+                                >
+                                  <option value="sample_our_evening">Our Evening ♡ (Default Theme)</option>
+                                  {audioTracks
+                                    .filter((t) => t.id !== 'sample_our_evening')
+                                    .map((trk) => (
+                                      <option key={trk.id} value={trk.id}>
+                                        {trk.name} ({trk.type?.replace('audio/', '') || 'audio'})
+                                      </option>
+                                    ))}
+                                </select>
+                              </div>
+
+                              <div>
+                                <label style={{ fontSize: '0.68rem', color: 'var(--admin-text-subtle)', display: 'block', marginBottom: '2px' }}>
+                                  Display Title
+                                </label>
+                                <input
+                                  type="text"
+                                  className={styles.formInput}
+                                  style={{ padding: '4px 6px', fontSize: '0.78rem' }}
+                                  value={marker.title || ''}
+                                  onChange={(e) => handleUpdateMusicMarker(mId, { title: e.target.value })}
+                                  placeholder="e.g. Our Evening ♡"
+                                />
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '2px' }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--admin-text-subtle)', cursor: 'pointer' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={marker.loop !== false}
+                                  onChange={(e) => handleUpdateMusicMarker(mId, { loop: e.target.checked })}
+                                />
+                                <span>Loop Audio</span>
+                              </label>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--admin-text-subtle)' }}>
+                                <span>Start:</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={0.5}
+                                  style={{ width: '45px', padding: '2px 4px', fontSize: '0.72rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--admin-border)', borderRadius: '3px', color: 'var(--admin-text-main)' }}
+                                  value={marker.startTime || 0}
+                                  onChange={(e) => handleUpdateMusicMarker(mId, { startTime: Number(e.target.value) })}
+                                />
+                                <span>s</span>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--admin-text-subtle)' }}>
+                                <span>End:</span>
+                                <input
+                                  type="number"
+                                  min={0}
+                                  step={0.5}
+                                  style={{ width: '45px', padding: '2px 4px', fontSize: '0.72rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--admin-border)', borderRadius: '3px', color: 'var(--admin-text-main)' }}
+                                  value={marker.endTime || ''}
+                                  onChange={(e) => handleUpdateMusicMarker(mId, { endTime: e.target.value ? Number(e.target.value) : undefined })}
+                                  placeholder="Full"
+                                />
+                                <span>s</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Individual Paragraphs List (Add / Remove / Reorder) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>

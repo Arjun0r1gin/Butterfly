@@ -14,9 +14,13 @@
 
 import { useRef, useEffect, useState, memo, useCallback } from 'react';
 import * as THREE from 'three';
+import { assetUrl } from '../../utils/assets';
 import type { StorySpreadContent } from '../../services/content/types';
 import { loadSavedContent } from '../../services/content/contentStorage';
 import { createSpreadCanvasTexture } from '../../services/content/pageTextureRenderer';
+import { musicMarkerRegistry } from '../../services/content/musicMarkerRegistry';
+import { audioPlayer } from '../../services/audio/audioPlayer';
+import { NowPlayingPill } from '../../components/common/NowPlayingPill';
 import styles from './Storybook.module.css';
 
 export const SHEET_COUNT = 4;
@@ -194,7 +198,7 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
     const loader = new THREE.TextureLoader();
 
     const loadTexture = (path: string) => {
-      const tex = loader.load(path);
+      const tex = loader.load(assetUrl(path));
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.minFilter = THREE.LinearMipmapLinearFilter;
       tex.magFilter = THREE.LinearFilter;
@@ -698,12 +702,86 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
     };
     animate();
 
+    // 13. Interactive 3D Raycasting for Inline Scrapbook Music Badges
+    const raycaster = new THREE.Raycaster();
+    const pointer = new THREE.Vector2();
+
+    const getHitMarkerAtPointer = (clientX: number, clientY: number) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      pointer.x = ((clientX - rect.left) / rect.width) * 2 - 1;
+      pointer.y = -((clientY - rect.top) / rect.height) * 2 + 1;
+
+      raycaster.setFromCamera(pointer, camera);
+
+      // Check hits against sheets
+      const sheetMeshes = sheets.map((s, idx) => ({ mesh: s.mesh, spreadIndex: idx }));
+      const intersects = raycaster.intersectObjects(sheetMeshes.map((s) => s.mesh));
+
+      if (intersects.length > 0) {
+        for (const hit of intersects) {
+          const match = sheetMeshes.find((s) => s.mesh === hit.object);
+          if (!match || !hit.uv) continue;
+
+          // Convert UV to 1024x1082 canvas space
+          const canvasX = hit.uv.x * 1024;
+          const canvasY = (1.0 - hit.uv.y) * 1082;
+
+          const markerHit = musicMarkerRegistry.findHit(match.spreadIndex, canvasX, canvasY);
+          if (markerHit) {
+            const hitPoint = hit.point.clone().project(camera);
+            const screenX = ((hitPoint.x + 1) / 2) * rect.width + rect.left;
+            const screenY = ((-hitPoint.y + 1) / 2) * rect.height + rect.top;
+
+            return {
+              markerHit,
+              spreadIndex: match.spreadIndex,
+              screenPosition: { x: screenX, y: screenY },
+            };
+          }
+        }
+      }
+      return null;
+    };
+
+    const handlePointerMove = (e: PointerEvent) => {
+      const hit = getHitMarkerAtPointer(e.clientX, e.clientY);
+      if (hit) {
+        renderer.domElement.style.cursor = 'pointer';
+      } else {
+        renderer.domElement.style.cursor = 'default';
+      }
+    };
+
+    const handlePointerDown = (e: PointerEvent) => {
+      const hit = getHitMarkerAtPointer(e.clientX, e.clientY);
+      if (hit) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const active = externalSpreads || loadSavedContent().spreads;
+        const pageRight = active[hit.spreadIndex]?.rightPage;
+        const marker = pageRight?.musicMarkers?.[hit.markerHit.markerId] || {
+          id: hit.markerHit.markerId,
+          trackId: 'sample_our_evening',
+          title: 'Our Evening ♡',
+          loop: true,
+        };
+
+        audioPlayer.playMarker(marker, hit.screenPosition);
+      }
+    };
+
+    renderer.domElement.addEventListener('pointermove', handlePointerMove);
+    renderer.domElement.addEventListener('pointerdown', handlePointerDown);
+
     return () => {
       isDisposed = true;
       sheetsRef.current = [];
       lBaseMatRef.current = null;
       cancelAnimationFrame(renderAnimId);
       resizeObserver.disconnect();
+      renderer.domElement.removeEventListener('pointermove', handlePointerMove);
+      renderer.domElement.removeEventListener('pointerdown', handlePointerDown);
       renderer.dispose();
       if (container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
@@ -765,6 +843,7 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
   return (
     <div className={`${styles.threePrototypeWrapper} ${className}`.trim()}>
       <div ref={mountRef} className={styles.threeCanvasContainer} />
+      <NowPlayingPill />
 
       {/* Interactive Controls & Progress Stage Inspector */}
       {showControls && (

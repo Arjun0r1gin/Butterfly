@@ -5,6 +5,8 @@
  * 5 original verified transparent assets from /flowers/
  */
 
+import { assetUrl } from '../../utils/assets';
+
 export interface FlowerAssetDefinition {
   id: string;
   name: string;
@@ -223,7 +225,7 @@ export class FlowerAssetCache {
     return new Promise((resolve) => {
       const img = new Image();
       img.crossOrigin = 'anonymous';
-      img.src = def.path;
+      img.src = assetUrl(def.path);
 
       img.onload = async () => {
         try {

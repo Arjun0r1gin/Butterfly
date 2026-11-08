@@ -117,10 +117,24 @@ export const STORYBOOK_SPREADS: StorySpread[] = [
       dateOrLocation: '15 July',
       decorativeInitial: '',
       storyParagraphs: [
-        'As I walked through the garden, a gentle breeze carried the scent of blooming flowers. The leaves rustled softly, as if sharing secrets of an older time. Sunlight slipped through the branches, painting golden patterns on the ground.',
-        'Every flower here felt like a quiet confession, blooming patiently under the warm summer sky.',
-        'It felt like the garden was not just a place, but a memory — one that had been waiting for me to return. ♡',
+        'As I walked through the garden, a gentle breeze carried the scent of blooming flowers. [[music:m_whispering_flowers]]\nThe leaves rustled softly, as if sharing secrets of an older time.',
+        "Sunlight slipped through the branches, painting golden patterns on the ground. Whenever I hear this melody [[music:m_whispering_garden]], I'm taken back to that evening — that evening, the golden hour, the music and the laughter, the quiet walks under the lantern light, and the feeling of being exactly where I was meant to be.",
+        'It felt like the garden was not just a place, but a memory — one that will always bloom in my heart. ♡',
       ],
+      musicMarkers: {
+        m_whispering_flowers: {
+          id: 'm_whispering_flowers',
+          trackId: 'sample_our_evening',
+          title: 'Our Evening ♡',
+          loop: true,
+        },
+        m_whispering_garden: {
+          id: 'm_whispering_garden',
+          trackId: 'sample_our_evening',
+          title: 'Our Evening ♡',
+          loop: true,
+        },
+      },
       signature: '',
       typography: {
         fontFamily: 'Caveat',

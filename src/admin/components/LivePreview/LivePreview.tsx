@@ -247,7 +247,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ content }) => {
             <img
               src="/butterfly/butterfly_full.png"
               alt=""
-              style={{ width: '42px', height: '42px', filter: 'drop-shadow(0 0 12px rgba(255,215,120,0.8))' }}
+              style={{ width: '56px', height: '37px', objectFit: 'contain', filter: 'drop-shadow(0 0 12px rgba(255,215,120,0.8))' }}
             />
           </div>
 

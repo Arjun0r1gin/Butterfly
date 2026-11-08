@@ -6,6 +6,7 @@
  */
 
 import { forwardRef, type HTMLAttributes } from 'react';
+import { assetUrl } from '../../utils/assets';
 import styles from './Butterfly.module.css';
 
 export interface ButterflyProps extends HTMLAttributes<HTMLDivElement> {
@@ -56,7 +57,7 @@ export const Butterfly = forwardRef<HTMLDivElement, ButterflyProps>(function But
         {/* Left Wing (Forewing + Hindwing with pivot along the right body axis) */}
         <div className={`${styles.wingContainer} ${styles.leftWingContainer}`}>
           <img
-            src="/butterfly/butterfly_wing_left.png"
+            src={assetUrl('/butterfly/butterfly_wing_left.png')}
             alt=""
             className={styles.wingImg}
             loading="eager"
@@ -67,7 +68,7 @@ export const Butterfly = forwardRef<HTMLDivElement, ButterflyProps>(function But
         {/* Central Velvet Body, Thorax & Antennae */}
         <div className={styles.bodyWrapper}>
           <img
-            src="/butterfly/butterfly_body.png"
+            src={assetUrl('/butterfly/butterfly_body.png')}
             alt=""
             className={styles.bodyImg}
             loading="eager"
@@ -78,7 +79,7 @@ export const Butterfly = forwardRef<HTMLDivElement, ButterflyProps>(function But
         {/* Right Wing (Forewing + Hindwing with pivot along the left body axis) */}
         <div className={`${styles.wingContainer} ${styles.rightWingContainer}`}>
           <img
-            src="/butterfly/butterfly_wing_right.png"
+            src={assetUrl('/butterfly/butterfly_wing_right.png')}
             alt=""
             className={styles.wingImg}
             loading="eager"

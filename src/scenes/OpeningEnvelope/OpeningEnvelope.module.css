@@ -1,0 +1,176 @@
+/**
+ * BUTTERFLY — Opening Envelope Component Styles
+ * Features clean pure-white background, centered responsive envelope,
+ * realistic soft depth shadow, and elegant pulsing "Click to Open ♡" prompt.
+ */
+
+.openingOverlay {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  background: #ffffff; /* Clean pure white background per user specification */
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: opacity 0.75s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+
+.envelopeContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  max-width: 100%;
+}
+
+/* Centered Envelope Card */
+.envelopeCard {
+  position: relative;
+  width: min(88vw, 680px);
+  aspect-ratio: 1024 / 576;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.35s ease;
+  animation: envelopeEntrance 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+.envelopeCard:hover {
+  transform: scale(1.02);
+}
+
+.envelopeCard:active {
+  transform: scale(0.995);
+}
+
+.envelopeImg {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+}
+
+/* "Click to Open ♡" Instruction */
+.promptWrapper {
+  margin-top: clamp(22px, 3.8vh, 34px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  animation: promptEntrance 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: transform 0.25s ease;
+}
+
+.promptText {
+  font-family: 'Caveat', 'Playfair Display', cursive, serif;
+  font-size: clamp(1.45rem, 2.6vw, 1.95rem);
+  font-weight: 600;
+  color: #5a3622; /* Dark warm-brown */
+  letter-spacing: 0.04em;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.85);
+  animation: pulsePrompt 2.6s ease-in-out infinite;
+  transition: color 0.25s ease, transform 0.25s ease;
+}
+
+.envelopeCard:hover + .promptWrapper .promptText,
+.promptWrapper:hover .promptText {
+  color: #8c5228; /* Antique-gold / warm brown on hover */
+  transform: scale(1.04);
+}
+
+.promptDecor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #a87954;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.promptArrow {
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.promptLine {
+  width: 48px;
+  height: 1.5px;
+  background: linear-gradient(90deg, transparent, #a87954, transparent);
+  border-radius: 1px;
+}
+
+/* Entrance Animations */
+@keyframes envelopeEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes promptEntrance {
+  0% {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Subtle Pulsing / Gentle Glow */
+@keyframes pulsePrompt {
+  0%, 100% {
+    opacity: 0.88;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.03);
+    text-shadow: 0 0 14px rgba(229, 189, 117, 0.45), 0 1px 2px rgba(255, 255, 255, 0.9);
+  }
+}
+
+/* Opening Dissolve Transition */
+.fadeOut {
+  pointer-events: none;
+  opacity: 0;
+}
+
+.fadeOut .envelopeCard {
+  transform: scale(1.08);
+  opacity: 0;
+  transition: transform 0.65s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.55s ease;
+}
+
+.fadeOut .promptWrapper {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+/* Mobile responsive optimization */
+@media (max-width: 768px) {
+  .envelopeCard {
+    width: min(92vw, 460px);
+  }
+
+  .promptWrapper {
+    margin-top: 20px;
+  }
+}

@@ -6,6 +6,7 @@
 
 import { memo } from 'react';
 import type { StoryPageLeft } from './types';
+import { assetUrl } from '../../utils/assets';
 import styles from './Storybook.module.css';
 
 export interface LeftPageContentProps {
@@ -19,7 +20,7 @@ export const LeftPageContent = memo(function LeftPageContent({
     <div className={styles.pageInner} data-side="left">
       {/* Background Warm Aged Parchment */}
       <img
-        src="/storybook/studio_page_blank_left.jpg"
+        src={assetUrl('/storybook/studio_page_blank_left.jpg')}
         alt=""
         className={styles.pageTemplateBg}
         aria-hidden="true"
@@ -39,9 +40,9 @@ export const LeftPageContent = memo(function LeftPageContent({
               {/* Washi Tape Strip */}
               <div className={`${styles.washiTape} ${styles[photo.tapeStyle] || ''}`}>
                 {photo.tapeStyle === 'washi-gold' ? (
-                  <img src="/storybook/assets/washi_gingham.png" alt="" className={styles.washiTapeImg} />
+                  <img src={assetUrl('/storybook/assets/washi_gingham.png')} alt="" className={styles.washiTapeImg} />
                 ) : (
-                  <img src="/storybook/assets/washi_pink_floral.png" alt="" className={styles.washiTapeImg} />
+                  <img src={assetUrl('/storybook/assets/washi_pink_floral.png')} alt="" className={styles.washiTapeImg} />
                 )}
               </div>
 
@@ -49,7 +50,7 @@ export const LeftPageContent = memo(function LeftPageContent({
               <div className={styles.photoCanvas}>
                 {photo.customUrl ? (
                   <img
-                    src={photo.customUrl}
+                    src={assetUrl(photo.customUrl)}
                     alt={photo.title}
                     className={styles.photoImg}
                   />
@@ -83,7 +84,7 @@ export const LeftPageContent = memo(function LeftPageContent({
             >
               {st.customUrl ? (
                 <img
-                  src={st.customUrl}
+                  src={assetUrl(st.customUrl)}
                   alt={st.label || ''}
                   className={styles.stickerImg}
                 />
