@@ -24,7 +24,7 @@ const LOCAL_ENDPOINT_KEY = 'butterfly_tracking_endpoint';
 
 // Placeholder Default Endpoint (Configurable in Local Admin Panel or .env)
 export const DEFAULT_TRACKING_ENDPOINT =
-  'https://script.google.com/macros/s/AKfycbx_PLACEHOLDER_ENDPOINT_URL/exec';
+  'https://script.google.com/mahttps://script.google.com/macros/s/AKfycbwMiqrcfA425iXZXYWZc8dwr406dIcbeEf2yK33G-9KUoADHlnXzEpP2bsA8nd7CCw/execcros/s/AKfycbx_PLACEHOLDER_ENDPOINT_URL/exec';
 
 export type DeviceCategory = 'mobile' | 'tablet' | 'desktop';
 
@@ -210,44 +210,120 @@ export function setTrackingEndpoint(url: string): void {
   }
 }
 
-/**
- * Dispatches a tracking payload asynchronously without awaiting or blocking
- */
-function sendPayload(payload: TrackingPayload): void {
-  const endpoint = getTrackingEndpoint();
-  const jsonString = JSON.stringify(payload);
+// In-memory locks to prevent concurrent duplicate dispatches before server response arrives
+let isDispatchingIn = false;
+let isDispatchingOut = false;
 
-  // If endpoint is a placeholder, log for developer debugging and return
-  if (endpoint.includes('AKfycbx_PLACEHOLDER_ENDPOINT_URL')) {
-    console.debug('[VisitorTracking] Event recorded (Endpoint is placeholder):', payload.eventType, payload);
-    return;
+/**
+ * Dispatches a tracking payload asynchronously with full response verification and 5-stage diagnostics.
+ * Does NOT treat browser queue acceptance as confirmed spreadsheet storage.
+ */
+export async function dispatchTrackingPayload(
+  payload: TrackingPayload
+): Promise<{ success: boolean; data?: any; error?: string }> {
+  const endpoint = getTrackingEndpoint();
+
+  // Stage 2: Payload created diagnostic
+  console.log('[VisitorTracking:2] Payload created:', {
+    eventType: payload.eventType,
+    eventId: payload.eventId,
+    visitId: payload.visitId,
+    clientTimestamp: payload.clientTimestamp,
+    elapsedTime: payload.elapsedTime,
+    deviceType: payload.deviceType,
+    browser: payload.browser,
+    os: payload.os,
+  });
+
+  // Verify endpoint validity
+  if (!endpoint || endpoint.includes('AKfycbx_PLACEHOLDER_ENDPOINT_URL')) {
+    const errorMsg =
+      'Apps Script Web App URL is not configured (currently using placeholder). Network request skipped.';
+    console.warn(
+      '[VisitorTracking:3] Endpoint unconfigured:',
+      errorMsg,
+      'Endpoint:',
+      endpoint
+    );
+    return { success: false, error: errorMsg };
   }
 
-  try {
-    // 1. Try navigator.sendBeacon first (ideal for non-blocking asynchronous transmission)
-    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
-      const blob = new Blob([jsonString], { type: 'text/plain;charset=UTF-8' });
-      const queued = navigator.sendBeacon(endpoint, blob);
-      if (queued) {
-        return;
-      }
-    }
+  const jsonString = JSON.stringify(payload);
 
-    // 2. Fallback to fetch with keepalive: true and mode: 'no-cors'
-    fetch(endpoint, {
+  try {
+    const startTime = performance.now();
+    console.log('[VisitorTracking:3] Dispatch initiated via fetch (keepalive: true):', {
+      endpoint,
+      payloadBytes: jsonString.length,
+    });
+
+    // Primary delivery: fetch with text/plain (avoids CORS preflight, enables response verification)
+    const resp = await fetch(endpoint, {
       method: 'POST',
       body: jsonString,
-      mode: 'no-cors',
-      keepalive: true,
       headers: {
         'Content-Type': 'text/plain;charset=UTF-8',
       },
-    }).catch(() => {
-      // Store in retry queue for later flush
-      queueForRetry(payload);
+      keepalive: true,
     });
-  } catch {
+
+    const latencyMs = Math.round(performance.now() - startTime);
+
+    // Stage 4: Fetch response received diagnostic
+    console.log('[VisitorTracking:4] Fetch response received:', {
+      endpoint,
+      status: resp.status,
+      ok: resp.ok,
+      latencyMs,
+    });
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: Server returned error status`);
+    }
+
+    const data = await resp.json();
+
+    // Stage 5: Apps Script received and stored the event
+    if (data.status === 'ok' || data.success === true || data.eventId) {
+      console.log('[VisitorTracking:5] Apps Script confirmed event stored in Google Sheets:', {
+        status: data.status,
+        eventId: data.eventId,
+        deduplicated: Boolean(data.deduplicated),
+        serverTimestamp: data.serverTimestamp,
+      });
+      return { success: true, data };
+    } else {
+      console.error('[VisitorTracking:5] Apps Script returned non-ok response:', data);
+      return { success: false, data, error: data.message || 'Server rejected event' };
+    }
+  } catch (fetchErr: any) {
+    console.warn(
+      '[VisitorTracking:4] Fetch failed or blocked by CORS. Attempting sendBeacon fallback:',
+      fetchErr?.message || fetchErr
+    );
+
+    // Fallback: navigator.sendBeacon (fire-and-forget for unloading pages)
+    if (typeof navigator !== 'undefined' && navigator.sendBeacon) {
+      try {
+        const blob = new Blob([jsonString], { type: 'text/plain;charset=UTF-8' });
+        const queued = navigator.sendBeacon(endpoint, blob);
+        console.log('[VisitorTracking:3/4] sendBeacon called:', {
+          endpoint,
+          queued,
+          note: queued
+            ? 'Queued in browser buffer (server delivery unverified)'
+            : 'sendBeacon buffer rejected',
+        });
+        if (queued) {
+          return { success: true, data: { status: 'queued_via_beacon' } };
+        }
+      } catch (beaconErr) {
+        console.error('[VisitorTracking:3/4] sendBeacon error:', beaconErr);
+      }
+    }
+
     queueForRetry(payload);
+    return { success: false, error: fetchErr?.message || String(fetchErr) };
   }
 }
 
@@ -276,7 +352,7 @@ export function flushPendingTrackingQueue(): void {
     sessionStorage.removeItem(SESSION_PENDING_QUEUE_KEY);
 
     queue.forEach((payload) => {
-      sendPayload(payload);
+      dispatchTrackingPayload(payload);
     });
   } catch {
     // ignore
@@ -291,18 +367,38 @@ export function flushPendingTrackingQueue(): void {
  * Records EVENT IN — Envelope Opened
  * Called strictly when the visitor successfully clicks to open the envelope.
  * Guarded against duplicate calls within the same visit session.
+ * Flags are ONLY set upon confirmed server ingestion.
  */
-export function recordEventIn(): boolean {
+export async function recordEventIn(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
 
-  try {
-    // Duplicate Prevention: only record once per session visit
-    if (sessionStorage.getItem(SESSION_IN_TRACKED_KEY) === 'true') {
-      return false;
-    }
+  const currentInTracked = sessionStorage.getItem(SESSION_IN_TRACKED_KEY);
+  const currentOutTracked = sessionStorage.getItem(SESSION_OUT_TRACKED_KEY);
 
+  // Stage 1: Event handler invoked diagnostic
+  console.log('[VisitorTracking:1] Event handler invoked: recordEventIn()', {
+    hasInTracked: currentInTracked === 'true',
+    hasOutTracked: currentOutTracked === 'true',
+    isDispatchingIn,
+  });
+
+  // Guard: If already confirmed stored in this session, return early
+  if (currentInTracked === 'true') {
+    console.log('[VisitorTracking:1] Early exit: IN event already marked as tracked in sessionStorage.');
+    return false;
+  }
+
+  // Guard: If a dispatch is currently in flight, prevent duplicate clicks
+  if (isDispatchingIn) {
+    console.log('[VisitorTracking:1] Early exit: IN event dispatch is already in flight.');
+    return false;
+  }
+
+  isDispatchingIn = true;
+
+  try {
     const now = Date.now();
-    sessionStorage.setItem(SESSION_IN_TRACKED_KEY, 'true');
+    // Cache the IN timestamp in session for elapsed time calculation
     sessionStorage.setItem(SESSION_IN_TIMESTAMP_KEY, now.toString());
 
     const visitId = getOrCreateVisitId();
@@ -317,12 +413,25 @@ export function recordEventIn(): boolean {
       ...devInfo,
     };
 
-    sendPayload(payload);
-    flushPendingTrackingQueue();
-    return true;
+    const result = await dispatchTrackingPayload(payload);
+
+    if (result.success) {
+      // ONLY set tracked flag when confirmed by server ingestion
+      sessionStorage.setItem(SESSION_IN_TRACKED_KEY, 'true');
+      flushPendingTrackingQueue();
+      return true;
+    } else {
+      console.warn(
+        '[VisitorTracking] IN event delivery was not confirmed by Apps Script. Session flag NOT set to true (retry allowed). Error:',
+        result.error
+      );
+      return false;
+    }
   } catch (err) {
-    console.debug('[VisitorTracking] Failed to record IN event:', err);
+    console.error('[VisitorTracking] Unexpected error during recordEventIn:', err);
     return false;
+  } finally {
+    isDispatchingIn = false;
   }
 }
 
@@ -330,19 +439,35 @@ export function recordEventIn(): boolean {
  * Records EVENT OUT — YES Button Clicked
  * Called strictly when the visitor clicks the YES button on the proposal.
  * Guarded against duplicate calls within the same visit session.
+ * Flags are ONLY set upon confirmed server ingestion.
  */
-export function recordEventOut(): boolean {
+export async function recordEventOut(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
 
+  const currentOutTracked = sessionStorage.getItem(SESSION_OUT_TRACKED_KEY);
+
+  // Stage 1: Event handler invoked diagnostic
+  console.log('[VisitorTracking:1] Event handler invoked: recordEventOut()', {
+    hasOutTracked: currentOutTracked === 'true',
+    isDispatchingOut,
+  });
+
+  // Guard: If already confirmed stored in this session, return early
+  if (currentOutTracked === 'true') {
+    console.log('[VisitorTracking:1] Early exit: OUT event already marked as tracked in sessionStorage.');
+    return false;
+  }
+
+  // Guard: If a dispatch is currently in flight, prevent duplicate clicks
+  if (isDispatchingOut) {
+    console.log('[VisitorTracking:1] Early exit: OUT event dispatch is already in flight.');
+    return false;
+  }
+
+  isDispatchingOut = true;
+
   try {
-    // Duplicate Prevention: only record once per session visit
-    if (sessionStorage.getItem(SESSION_OUT_TRACKED_KEY) === 'true') {
-      return false;
-    }
-
     const now = Date.now();
-    sessionStorage.setItem(SESSION_OUT_TRACKED_KEY, 'true');
-
     const visitId = getOrCreateVisitId();
     const eventId = generateEventId('OUT');
     const devInfo = getDeviceInfo();
@@ -366,12 +491,25 @@ export function recordEventOut(): boolean {
       ...devInfo,
     };
 
-    sendPayload(payload);
-    flushPendingTrackingQueue();
-    return true;
+    const result = await dispatchTrackingPayload(payload);
+
+    if (result.success) {
+      // ONLY set tracked flag when confirmed by server ingestion
+      sessionStorage.setItem(SESSION_OUT_TRACKED_KEY, 'true');
+      flushPendingTrackingQueue();
+      return true;
+    } else {
+      console.warn(
+        '[VisitorTracking] OUT event delivery was not confirmed by Apps Script. Session flag NOT set to true (retry allowed). Error:',
+        result.error
+      );
+      return false;
+    }
   } catch (err) {
-    console.debug('[VisitorTracking] Failed to record OUT event:', err);
+    console.error('[VisitorTracking] Unexpected error during recordEventOut:', err);
     return false;
+  } finally {
+    isDispatchingOut = false;
   }
 }
 
@@ -411,6 +549,24 @@ export function getSessionTrackingStatus(): {
     hasOpenedEnvelope,
     hasClickedYes,
     elapsedSeconds,
+  };
+}
+
+// Global browser diagnostic utility accessible via window.__butterflyTracking
+if (typeof window !== 'undefined') {
+  (window as any).__butterflyTracking = {
+    getStatus: getSessionTrackingStatus,
+    getEndpoint: getTrackingEndpoint,
+    setEndpoint: setTrackingEndpoint,
+    resetSession: () => {
+      sessionStorage.removeItem(SESSION_IN_TRACKED_KEY);
+      sessionStorage.removeItem(SESSION_IN_TIMESTAMP_KEY);
+      sessionStorage.removeItem(SESSION_OUT_TRACKED_KEY);
+      sessionStorage.removeItem(SESSION_VISIT_ID_KEY);
+      console.log('[VisitorTracking] Session tracking state successfully reset.');
+    },
+    triggerEventIn: () => recordEventIn(),
+    triggerEventOut: () => recordEventOut(),
   };
 }
 
