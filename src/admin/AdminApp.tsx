@@ -12,10 +12,11 @@ import { ScrapbookEditor } from './components/ScrapbookEditor/ScrapbookEditor';
 import { FinalPageEditor } from './components/FinalPageEditor/FinalPageEditor';
 import { MediaLibrary } from './components/MediaLibrary/MediaLibrary';
 import { AudioLibrary } from './components/AudioLibrary/AudioLibrary';
+import { VisitorTracking } from './components/VisitorTracking/VisitorTracking';
 import { LivePreview } from './components/LivePreview/LivePreview';
 import styles from './Admin.module.css';
 
-type AdminView = 'dashboard' | 'scrapbook' | 'final' | 'media' | 'audio' | 'preview';
+type AdminView = 'dashboard' | 'scrapbook' | 'final' | 'media' | 'audio' | 'tracking' | 'preview';
 
 export const AdminApp: React.FC = () => {
   const [activeView, setActiveView] = useState<AdminView>('dashboard');
@@ -235,6 +236,17 @@ export const AdminApp: React.FC = () => {
             <button
               type="button"
               className={`${styles.navItem} ${
+                activeView === 'tracking' ? styles.navItemActive : ''
+              }`}
+              onClick={() => setActiveView('tracking')}
+            >
+              <span className={styles.navIcon}>📈</span>
+              <span>Visitor Tracking</span>
+            </button>
+
+            <button
+              type="button"
+              className={`${styles.navItem} ${
                 activeView === 'preview' ? styles.navItemActive : ''
               }`}
               onClick={() => setActiveView('preview')}
@@ -274,6 +286,8 @@ export const AdminApp: React.FC = () => {
           {activeView === 'media' && <MediaLibrary />}
 
           {activeView === 'audio' && <AudioLibrary />}
+
+          {activeView === 'tracking' && <VisitorTracking />}
 
           {activeView === 'preview' && <LivePreview content={content} />}
         </main>

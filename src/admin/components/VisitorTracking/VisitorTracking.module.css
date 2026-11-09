@@ -1,0 +1,558 @@
+/**
+ * BUTTERFLY — Visitor Tracking Admin Stylesheet
+ * Premium dark obsidian & antique-gold theme
+ */
+
+.trackingContainer {
+  padding: 32px;
+  max-width: 1440px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* Header Section */
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.headerTitleGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.headerTitle {
+  font-family: 'Cinzel', serif;
+  font-size: 1.85rem;
+  color: var(--admin-gold-bright);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.headerSubtitle {
+  color: var(--admin-text-muted);
+  font-size: 0.92rem;
+  margin: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Endpoint & Security Config Card */
+.configCard {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.configHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.configTitle {
+  font-family: 'Cinzel', serif;
+  font-size: 1.05rem;
+  color: var(--admin-gold-primary);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.statusLive {
+  background: rgba(78, 200, 116, 0.15);
+  color: #4ec874;
+  border: 1px solid rgba(78, 200, 116, 0.35);
+}
+
+.statusMock {
+  background: rgba(229, 189, 117, 0.15);
+  color: var(--admin-gold-bright);
+  border: 1px solid rgba(229, 189, 117, 0.35);
+}
+
+.statusUnconfigured {
+  background: rgba(224, 82, 68, 0.15);
+  color: #f17c70;
+  border: 1px solid rgba(224, 82, 68, 0.35);
+}
+
+.configInputsGrid {
+  display: grid;
+  grid-template-columns: 2fr 1fr auto;
+  gap: 14px;
+  align-items: flex-end;
+}
+
+.inputGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.inputLabel {
+  font-size: 0.8rem;
+  color: var(--admin-text-subtle);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.inputField {
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-main);
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.88rem;
+  transition: all 0.2s ease;
+  font-family: inherit;
+}
+
+.inputField:focus {
+  outline: none;
+  border-color: var(--admin-gold-primary);
+  box-shadow: 0 0 0 2px rgba(229, 189, 117, 0.2);
+}
+
+.configBtnGroup {
+  display: flex;
+  gap: 10px;
+}
+
+/* KPI Summary Cards Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  gap: 16px;
+}
+
+.kpiCard {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.kpiCard:hover {
+  transform: translateY(-2px);
+  border-color: var(--admin-gold-primary);
+}
+
+.kpiHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.kpiLabel {
+  font-size: 0.82rem;
+  color: var(--admin-text-muted);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.kpiIcon {
+  font-size: 1.25rem;
+}
+
+.kpiValue {
+  font-family: 'Cinzel', serif;
+  font-size: 2.1rem;
+  font-weight: 700;
+  color: var(--admin-gold-bright);
+  line-height: 1.1;
+  margin: 4px 0 0 0;
+}
+
+.kpiSubtext {
+  font-size: 0.78rem;
+  color: var(--admin-text-subtle);
+}
+
+/* Filter and Controls Toolbar */
+.toolbarCard {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.toolbarRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.searchBox {
+  position: relative;
+  flex: 1;
+  min-width: 260px;
+  max-width: 440px;
+}
+
+.searchInput {
+  width: 100%;
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-main);
+  border-radius: 8px;
+  padding: 9px 14px 9px 36px;
+  font-size: 0.88rem;
+}
+
+.searchIcon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--admin-text-subtle);
+  font-size: 0.9rem;
+}
+
+.filterPillsGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.filterLabel {
+  font-size: 0.8rem;
+  color: var(--admin-text-subtle);
+  margin-right: 4px;
+}
+
+.filterPill {
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-muted);
+  border-radius: 20px;
+  padding: 5px 14px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filterPill:hover {
+  color: var(--admin-gold-primary);
+  border-color: var(--admin-gold-primary);
+}
+
+.filterPillActive {
+  background: rgba(229, 189, 117, 0.18);
+  border-color: var(--admin-gold-primary);
+  color: var(--admin-gold-bright);
+  font-weight: 600;
+}
+
+.viewToggleGroup {
+  display: flex;
+  background: var(--admin-bg-base);
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+}
+
+.viewToggleBtn {
+  background: transparent;
+  border: none;
+  color: var(--admin-text-muted);
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.viewToggleBtnActive {
+  background: var(--admin-bg-elevated);
+  color: var(--admin-gold-bright);
+  font-weight: 600;
+}
+
+/* Event Log Table */
+.tableContainer {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.eventsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+  text-align: left;
+}
+
+.eventsTable th {
+  background: #1e1711;
+  color: var(--admin-gold-primary);
+  padding: 12px 16px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--admin-border);
+  white-space: nowrap;
+}
+
+.eventsTable td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(229, 189, 117, 0.08);
+  color: var(--admin-text-main);
+  white-space: nowrap;
+}
+
+.eventsTable tr:hover td {
+  background: rgba(229, 189, 117, 0.04);
+}
+
+/* Badges */
+.eventBadge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.badgeIn {
+  background: rgba(78, 200, 116, 0.15);
+  color: #55d67e;
+  border: 1px solid rgba(78, 200, 116, 0.35);
+}
+
+.badgeOut {
+  background: rgba(246, 179, 62, 0.18);
+  color: #fedc7c;
+  border: 1px solid rgba(246, 179, 62, 0.4);
+}
+
+.deviceBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--admin-text-muted);
+}
+
+/* Visit Timelines View */
+.timelineGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.timelineCard {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  transition: border-color 0.2s ease;
+}
+
+.timelineCard:hover {
+  border-color: var(--admin-gold-primary);
+}
+
+.timelineHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  border-bottom: 1px solid rgba(229, 189, 117, 0.1);
+  padding-bottom: 12px;
+}
+
+.visitIdTitle {
+  font-family: monospace;
+  font-size: 0.95rem;
+  color: var(--admin-gold-primary);
+  font-weight: 600;
+}
+
+.timelineStepsRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.timelineStep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.stepDot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.stepDotIn {
+  background: #4ec874;
+  box-shadow: 0 0 8px rgba(78, 200, 116, 0.5);
+}
+
+.stepDotOut {
+  background: #fedc7c;
+  box-shadow: 0 0 8px rgba(254, 220, 124, 0.5);
+}
+
+.stepDotNone {
+  background: #665243;
+}
+
+.stepInfo {
+  display: flex;
+  flex-direction: column;
+}
+
+.stepName {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--admin-text-main);
+}
+
+.stepTime {
+  font-size: 0.74rem;
+  color: var(--admin-text-subtle);
+}
+
+.timelineConnector {
+  flex: 1;
+  min-width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, #4ec874, #fedc7c);
+  opacity: 0.6;
+}
+
+.timelineConnectorIncomplete {
+  flex: 1;
+  min-width: 40px;
+  height: 2px;
+  background: #443528;
+}
+
+.durationBadge {
+  background: rgba(229, 189, 117, 0.12);
+  border: 1px solid rgba(229, 189, 117, 0.25);
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 0.78rem;
+  color: var(--admin-gold-bright);
+  font-weight: 600;
+}
+
+/* Empty State */
+.emptyState {
+  padding: 60px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  color: var(--admin-text-muted);
+}
+
+.emptyIcon {
+  font-size: 3rem;
+  opacity: 0.6;
+}
+
+/* Buttons */
+.btnPrimary {
+  background: linear-gradient(135deg, #e5bd75 0%, #c49a52 100%);
+  color: #1a140f;
+  border: none;
+  border-radius: 8px;
+  padding: 9px 18px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btnPrimary:hover {
+  background: linear-gradient(135deg, #fedc7c 0%, #e5bd75 100%);
+  box-shadow: 0 4px 14px rgba(229, 189, 117, 0.3);
+}
+
+.btnSecondary {
+  background: var(--admin-bg-surface);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-gold-primary);
+  border-radius: 8px;
+  padding: 9px 16px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btnSecondary:hover {
+  background: rgba(229, 189, 117, 0.1);
+  border-color: var(--admin-gold-primary);
+}
+
+@media (max-width: 900px) {
+  .configInputsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+

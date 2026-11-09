@@ -12,6 +12,7 @@ import { FlowerRainCelebration } from './FlowerRainCelebration';
 import { loadSavedContent } from '../../services/content/contentStorage';
 import type { ButterflyContent, FinalQuestionContent } from '../../services/content/types';
 import { getMediaUrl } from '../../services/content/indexedDB';
+import { recordEventOut } from '../../services/tracking/visitorTracking';
 import styles from './FinalQuestionModal.module.css';
 
 export interface FinalQuestionModalProps {
@@ -261,6 +262,7 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
 
   // YES Button Click -> triggers full-screen flower rain cascade
   const handleYesClick = useCallback(() => {
+    recordEventOut();
     setIsCelebration(true);
   }, []);
 

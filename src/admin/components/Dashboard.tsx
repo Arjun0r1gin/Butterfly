@@ -10,7 +10,7 @@ import styles from '../Admin.module.css';
 
 export interface DashboardProps {
   content: ButterflyContent;
-  onNavigate: (view: 'dashboard' | 'scrapbook' | 'final' | 'media' | 'audio' | 'preview') => void;
+  onNavigate: (view: 'dashboard' | 'scrapbook' | 'final' | 'media' | 'audio' | 'tracking' | 'preview') => void;
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ content, onNavigate }) => {
@@ -138,6 +138,14 @@ export const Dashboard: React.FC<DashboardProps> = ({ content, onNavigate }) => 
           <h3 className={styles.actionCardTitle}>Audio Library</h3>
           <p className={styles.actionCardDesc}>
             Upload MP3, WAV, and OGG songs into IndexedDB and embed interactive music notes inline into diary handwriting.
+          </p>
+        </div>
+
+        <div className={styles.actionCard} onClick={() => onNavigate('tracking')}>
+          <div className={styles.actionCardIcon}>📈</div>
+          <h3 className={styles.actionCardTitle}>Visitor Tracking</h3>
+          <p className={styles.actionCardDesc}>
+            Monitor IN (Envelope Opened) and OUT (YES Clicked) events, visit timelines, conversion rate, and export CSV from Google Sheets.
           </p>
         </div>
 

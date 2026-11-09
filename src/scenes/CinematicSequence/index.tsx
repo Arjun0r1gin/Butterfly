@@ -22,6 +22,7 @@ import { FlowerTunnel } from '../FlowerTunnel';
 import { FlowerAssetCache } from '../FlowerTunnel/flowerRegistry';
 import { Butterfly, ButterflyGlitterTrail } from '../../components/Butterfly';
 import { OpeningEnvelope } from '../OpeningEnvelope/OpeningEnvelope';
+import { recordEventIn } from '../../services/tracking/visitorTracking';
 import { STORYBOOK_SPREADS } from '../Storybook/storybookData';
 import { ThreePageFlipPrototype } from '../Storybook/ThreePageFlipPrototype';
 import { GlobalAtmosphere, type EnvState } from '../../components/Environment/GlobalAtmosphere';
@@ -270,6 +271,7 @@ export const CinematicSequence = memo(function CinematicSequence({
 
   const handleEnvelopeOpen = useCallback(() => {
     setIsEnvelopeOpened(true);
+    recordEventIn();
   }, []);
 
   const handleEnvelopeFinished = useCallback(() => {
