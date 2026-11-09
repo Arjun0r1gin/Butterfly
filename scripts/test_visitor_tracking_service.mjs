@@ -46,6 +46,21 @@ global.performance = {
   now: () => Date.now(),
 };
 
+// Mock fetch
+let fetchCalls = [];
+global.fetch = async (url, opts) => {
+  fetchCalls.push({ url, opts });
+  return {
+    ok: true,
+    status: 200,
+    json: async () => ({
+      status: 'ok',
+      eventId: 'evt_test_123',
+      serverTimestamp: '2026-11-09T21:00:00.000+05:30',
+    }),
+  };
+};
+
 // Import visitorTracking functions
 import {
   recordEventIn,
@@ -60,25 +75,14 @@ console.log('--> Testing Visitor Tracking 5-Stage Architecture & Flag Reliabilit
 
 // Test 1: When endpoint is placeholder, recordEventIn does NOT set tracked flag
 sessionStorage.clear();
+setTrackingEndpoint('https://script.google.com/macros/s/AKfycbx_PLACEHOLDER_ENDPOINT_URL/exec');
 const initialInSuccess = await recordEventIn();
 assert.strictEqual(initialInSuccess, false, 'Expected recordEventIn to return false when endpoint is placeholder');
 assert.strictEqual(sessionStorage.getItem('butterfly_tracking_in_tracked'), null, 'sessionStorage flag must NOT be set when endpoint is placeholder');
 console.log('  [PASS] 1. Failed/placeholder dispatch does not leave stale "in_tracked: true" in sessionStorage.');
 
 // Test 2: Configuring a mock endpoint and simulating successful server ingestion
-let fetchCalls = [];
-global.fetch = async (url, opts) => {
-  fetchCalls.push({ url, opts });
-  return {
-    ok: true,
-    status: 200,
-    json: async () => ({
-      status: 'ok',
-      eventId: 'evt_test_123',
-      serverTimestamp: '2026-11-09T21:00:00.000+05:30',
-    }),
-  };
-};
+fetchCalls = [];
 
 setTrackingEndpoint('https://script.google.com/macros/s/AKfyc_MOCK_TEST_ENDPOINT/exec');
 assert.strictEqual(getTrackingEndpoint(), 'https://script.google.com/macros/s/AKfyc_MOCK_TEST_ENDPOINT/exec');

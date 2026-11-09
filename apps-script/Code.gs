@@ -17,6 +17,7 @@ var TIMEZONE = "Asia/Kolkata";
 var SHEET_EVENTS = "Visitor Events";
 var SHEET_DASHBOARD = "Dashboard";
 var SHEET_VISITS = "Visit Details";
+var SPREADSHEET_ID_FALLBACK = "17pQ9M5g5_7Z94bu6vF4ii_rLx3IRLShVqlq6knWDtLg";
 
 /**
  * 1. Anonymous Event Ingestion Endpoint (doPost)
@@ -182,16 +183,20 @@ function getTargetSpreadsheet() {
     return ss;
   }
 
-  console.warn("[getTargetSpreadsheet] SpreadsheetApp.getActiveSpreadsheet() returned null. Checking SPREADSHEET_ID script property...");
+  console.warn("[getTargetSpreadsheet] SpreadsheetApp.getActiveSpreadsheet() returned null. Checking SPREADSHEET_ID script property or fallback...");
   var sheetId = PropertiesService.getScriptProperties().getProperty("SPREADSHEET_ID");
+  if (!sheetId || sheetId.trim() === "") {
+    sheetId = SPREADSHEET_ID_FALLBACK;
+  }
+
   if (sheetId && sheetId.trim() !== "") {
     try {
       ss = SpreadsheetApp.openById(sheetId.trim());
-      console.log("[getTargetSpreadsheet] Successfully opened spreadsheet via SPREADSHEET_ID property.");
+      console.log("[getTargetSpreadsheet] Successfully opened spreadsheet via ID: " + sheetId.trim());
       return ss;
     } catch (openErr) {
-      console.error("[getTargetSpreadsheet] Failed to open spreadsheet by SPREADSHEET_ID: " + (openErr.stack || openErr.message || String(openErr)));
-      throw new Error("Unable to open spreadsheet with configured SPREADSHEET_ID: " + (openErr.message || String(openErr)));
+      console.error("[getTargetSpreadsheet] Failed to open spreadsheet by ID: " + (openErr.stack || openErr.message || String(openErr)));
+      throw new Error("Unable to open spreadsheet with ID: " + (openErr.message || String(openErr)));
     }
   }
 

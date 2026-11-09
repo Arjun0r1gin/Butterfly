@@ -35,6 +35,7 @@ global.PropertiesService = {
 
 global.SpreadsheetApp = {
   getActiveSpreadsheet: () => mockSpreadsheet,
+  openById: (id) => mockSpreadsheet,
 };
 
 global.Utilities = {
@@ -178,7 +179,7 @@ assert.throws(() => simulateFrontendParse(postWrongJson), /Unauthorized: Invalid
 assert.throws(() => simulateFrontendParse(getJson), /health check instead of event data/);
 console.log('  [PASS] 7. Frontend parsing logic strictly verifies all 4 response variants.');
 
-// Test 8: Null getActiveSpreadsheet() without SPREADSHEET_ID returns descriptive error
+// Test 8: Null getActiveSpreadsheet() with openById fallback succeeds
 global.SpreadsheetApp.getActiveSpreadsheet = () => null;
 const postNullSs = doPost({
   postData: {
@@ -189,10 +190,9 @@ const postNullSs = doPost({
   },
 });
 const postNullSsJson = JSON.parse(postNullSs.getContent());
-assert.strictEqual(postNullSsJson.success, false);
-assert.strictEqual(postNullSsJson.status, 'error');
-assert.ok(postNullSsJson.message.includes('SpreadsheetApp.getActiveSpreadsheet() returned null'));
-console.log('  [PASS] 8. Null getActiveSpreadsheet() safely returns descriptive error instead of "Processing failed".');
+assert.strictEqual(postNullSsJson.success, true);
+assert.strictEqual(postNullSsJson.status, 'ok');
+console.log('  [PASS] 8. Null getActiveSpreadsheet() automatically falls back to configured SPREADSHEET_ID.');
 
 // Test 9: Null getActiveSpreadsheet() with SPREADSHEET_ID opens via openById
 scriptProps.SPREADSHEET_ID = 'test_sheet_id_xyz';

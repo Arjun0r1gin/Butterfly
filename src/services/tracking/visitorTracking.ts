@@ -22,9 +22,9 @@ const SESSION_OUT_TRACKED_KEY = 'butterfly_tracking_out_tracked';
 const SESSION_PENDING_QUEUE_KEY = 'butterfly_tracking_pending_queue';
 const LOCAL_ENDPOINT_KEY = 'butterfly_tracking_endpoint';
 
-// Placeholder Default Endpoint (Configurable in Local Admin Panel or .env)
+// Default Production Tracking Endpoint (Google Apps Script Web App)
 export const DEFAULT_TRACKING_ENDPOINT =
-  'https://script.google.com/mahttps://script.google.com/macros/s/AKfycbwMiqrcfA425iXZXYWZc8dwr406dIcbeEf2yK33G-9KUoADHlnXzEpP2bsA8nd7CCw/execcros/s/AKfycbx_PLACEHOLDER_ENDPOINT_URL/exec';
+  'https://script.google.com/macros/s/AKfycbwMiqrcfA425iXZXYWZc8dwr406dIcbeEf2yK33G-9KUoADHlnXzEpP2bsA8nd7CCw/exec';
 
 export type DeviceCategory = 'mobile' | 'tablet' | 'desktop';
 
