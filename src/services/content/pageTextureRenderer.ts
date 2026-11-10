@@ -655,8 +655,26 @@ export async function renderRightPageCanvas(
 
   ctx.restore();
 
-  // 7. Render Stickers (e.g. Butterfly flight loop doodle, Pink Wildflower Sprig)
-  await renderStickersOnCanvas(ctx, page.stickers);
+  // 7. Render Stickers (excluding any flower stickers on right narrative pages)
+  const rightPageStickers = (page.stickers || []).filter((st) => {
+    const isFlower =
+      st.type === 'flower' ||
+      st.type === 'botanical' ||
+      (st.customUrl &&
+        (st.customUrl.includes('flower') ||
+          st.customUrl.includes('sprig') ||
+          st.customUrl.includes('blossom') ||
+          st.customUrl.includes('stamp_pink') ||
+          st.customUrl.includes('stamp_vintage_rose') ||
+          st.customUrl.includes('washi_pink_floral'))) ||
+      (st.label &&
+        (st.label.toLowerCase().includes('flower') ||
+          st.label.toLowerCase().includes('sprig') ||
+          st.label.toLowerCase().includes('blossom') ||
+          st.label.toLowerCase().includes('rose')));
+    return !isFlower;
+  });
+  await renderStickersOnCanvas(ctx, rightPageStickers);
 }
 
 /**

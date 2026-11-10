@@ -23,15 +23,21 @@
 }
 
 .adminContainer {
-  min-height: 100vh;
+  position: fixed;
+  inset: 0;
   width: 100vw;
+  height: 100vh;
+  height: 100dvh;
   background: var(--admin-bg-base);
   color: var(--admin-text-main);
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   display: flex;
   flex-direction: column;
-  overflow-x: hidden;
+  overflow: hidden;
   box-sizing: border-box;
+  user-select: text;
+  -webkit-user-select: text;
+  z-index: 1000;
 }
 
 /* --------------------------------------------------------------------------
@@ -39,6 +45,8 @@
  * -------------------------------------------------------------------------- */
 .adminHeader {
   height: 64px;
+  min-height: 64px;
+  max-height: 64px;
   background: rgba(22, 17, 12, 0.95);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
@@ -47,9 +55,9 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   z-index: 100;
+  box-sizing: border-box;
 }
 
 .brandGroup {
@@ -181,8 +189,12 @@
  * -------------------------------------------------------------------------- */
 .adminBody {
   flex: 1;
+  min-height: 0;
+  height: calc(100vh - 64px);
+  height: calc(100dvh - 64px);
   display: flex;
-  min-height: calc(100vh - 64px);
+  overflow: hidden;
+  position: relative;
 }
 
 .sidebar {
@@ -194,6 +206,10 @@
   flex-direction: column;
   justify-content: space-between;
   flex-shrink: 0;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .navSection {
@@ -248,10 +264,46 @@
 
 .mainPanel {
   flex: 1;
+  min-width: 0;
+  min-height: 0;
+  height: 100%;
   padding: 32px 40px;
   overflow-y: auto;
+  overflow-x: hidden;
   max-width: 1600px;
   box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Custom Scrollbars for Admin Panel */
+.mainPanel::-webkit-scrollbar,
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.mainPanel::-webkit-scrollbar-track,
+.sidebar::-webkit-scrollbar-track {
+  background: rgba(18, 14, 10, 0.6);
+}
+
+.mainPanel::-webkit-scrollbar-thumb,
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(229, 189, 117, 0.35);
+  border-radius: 4px;
+  border: 1px solid rgba(229, 189, 117, 0.15);
+}
+
+.mainPanel::-webkit-scrollbar-thumb:hover,
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: var(--admin-gold-primary);
+}
+
+.mainPanel,
+.sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(229, 189, 117, 0.45) rgba(18, 14, 10, 0.6);
 }
 
 /* --------------------------------------------------------------------------
@@ -993,4 +1045,247 @@
   color: #ff8e82;
   font-weight: 600;
 }
+
+/* ==========================================================================
+   SIMPLIFIED SCRAPBOOK DOCUMENT EDITOR
+   ========================================================================== */
+
+/* Main layout for Right Page narrative */
+.narrativeLayoutSplit {
+  display: grid;
+  grid-template-columns: 460px 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+@media (max-width: 1240px) {
+  .narrativeLayoutSplit {
+    grid-template-columns: 1fr;
+  }
+}
+
+.narrativeLayoutPreviewOnly {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  width: 100%;
+}
+
+/* Page Settings Bar */
+.pageSettingsCard {
+  background: rgba(24, 18, 12, 0.85);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: 12px 16px;
+  margin-bottom: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pageSettingsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr 1.2fr;
+  gap: 10px;
+}
+
+@media (max-width: 900px) {
+  .pageSettingsGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* Document Formatting Toolbar */
+.documentToolbar {
+  background: rgba(26, 20, 14, 0.92);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: 8px 14px;
+  margin-bottom: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.toolbarGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbarDivider {
+  width: 1px;
+  height: 22px;
+  background: rgba(229, 189, 117, 0.2);
+  margin: 0 3px;
+}
+
+.toolbarBtn {
+  background: rgba(24, 18, 12, 0.7);
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  color: var(--admin-text-main);
+  padding: 5px 9px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.toolbarBtn:hover {
+  border-color: var(--admin-gold-primary);
+  color: var(--admin-gold-bright);
+  background: rgba(229, 189, 117, 0.1);
+}
+
+.toolbarBtnActive {
+  background: var(--admin-gold-primary) !important;
+  color: #1a0f05 !important;
+  border-color: var(--admin-gold-primary) !important;
+}
+
+/* Document Writing Area */
+.writingEditorCard {
+  background: rgba(24, 18, 12, 0.85);
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.writingEditorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.documentTextarea {
+  width: 100%;
+  min-height: 360px;
+  background: #140f0b;
+  border: 1px solid rgba(229, 189, 117, 0.25);
+  border-radius: 8px;
+  padding: 16px 18px;
+  font-size: 1.12rem;
+  line-height: 1.6;
+  color: #f5edd8;
+  outline: none;
+  resize: vertical;
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  box-sizing: border-box;
+}
+
+.documentTextarea:focus {
+  border-color: var(--admin-gold-primary);
+  box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.5), 0 0 0 2px rgba(229, 189, 117, 0.15);
+}
+
+/* Readable Physical Book Preview */
+.readablePreviewWrapper {
+  background: #0d0a08;
+  border: 1px solid var(--admin-border);
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  box-shadow: inset 0 2px 20px rgba(0, 0, 0, 0.6);
+  position: sticky;
+  top: 16px;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+
+.readablePhysicalPage {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  min-height: 540px;
+  background: #fbf7ee url('/storybook/studio_page_blank_right.jpg') center/cover no-repeat;
+  border-radius: 4px 10px 10px 4px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.25), inset 8px 0 16px rgba(40, 20, 5, 0.15);
+  padding: 34px 28px 28px 34px;
+  overflow: hidden;
+  user-select: none;
+  border-left: 2px solid rgba(139, 69, 19, 0.3);
+  box-sizing: border-box;
+}
+
+.readablePhysicalPageFullSize {
+  max-width: 720px;
+  min-height: 900px;
+  padding: 58px 48px 48px 58px;
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.7), 0 4px 12px rgba(0, 0, 0, 0.35), inset 12px 0 24px rgba(40, 20, 5, 0.18);
+}
+
+/* Overflow Guidance Pill */
+.guidancePill {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.80rem;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.guidancePillGood {
+  background: rgba(78, 200, 116, 0.12);
+  border: 1px solid rgba(78, 200, 116, 0.35);
+  color: #7ce89b;
+}
+
+.guidancePillWarning {
+  background: rgba(229, 189, 117, 0.15);
+  border: 1px solid rgba(229, 189, 117, 0.4);
+  color: var(--admin-gold-bright);
+}
+
+.guidancePillOverflow {
+  background: rgba(224, 139, 28, 0.16);
+  border: 1px solid rgba(224, 139, 28, 0.45);
+  color: #f7b05b;
+}
+
+/* Music Marker Row & Tray */
+.musicTrayCard {
+  background: rgba(24, 18, 12, 0.85);
+  border: 1px solid rgba(229, 189, 117, 0.3);
+  border-radius: 10px;
+  padding: 12px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.musicMarkerItem {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(229, 189, 117, 0.2);
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 

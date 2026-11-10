@@ -1,13 +1,16 @@
 /**
- * BUTTERFLY — Scrapbook Editor Component
- * Full editing of all 8 scrapbook pages across 4 chapters:
- * - Text, headings, drop caps, narrative paragraphs, notes, and polaroids
- * - Interactive visual page canvas with drag, resize, rotate, and layering of stickers/GIFs
- * - Multi-level Undo / Redo history stack
- * - Media library integration for PNG, JPG, WebP, and animated GIF insertion
+ * BUTTERFLY — Simplified Scrapbook Content Admin Editor
+ * Clean, document-style writing experience for non-technical users:
+ * - Direct single-document writing with automatic paragraph recognition & preservation
+ * - Formatting toolbar (Font family, size, line spacing, ink color swatches, alignment, bold, italic, reset)
+ * - Seamless cursor-based music marker insertion, color & size customization, and test audio playback
+ * - Readable live physical book preview with parchment texture, realistic spacing, and full-size toggle
+ * - Gentle, human-friendly overflow guidance ("This page looks good." / "This page is getting full.")
+ * - Dedicated Left Page photo collage & sticker canvas mode (strictly separated from narrative writing)
+ * - Full Undo / Redo history stack and zero data loss for existing confession text
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useRef, useEffect, useMemo } from 'react';
 import type {
   ButterflyContent,
   StorySpreadContent,
@@ -36,6 +39,7 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
 }) => {
   const [activeSpreadIdx, setActiveSpreadIdx] = useState(0);
   const [activeSide, setActiveSide] = useState<'left' | 'right'>('right');
+  const [viewMode, setViewMode] = useState<'split' | 'preview-only'>('split');
   const [showMediaPicker, setShowMediaPicker] = useState(false);
 
   // Undo / Redo history stack
@@ -43,7 +47,6 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
   const historyIdxRef = useRef<number>(-1);
 
   const pushHistory = useCallback((currentContent: ButterflyContent) => {
-    // Keep max 25 steps
     const newHistory = historyRef.current.slice(0, historyIdxRef.current + 1);
     newHistory.push(JSON.parse(JSON.stringify(currentContent)));
     if (newHistory.length > 25) newHistory.shift();
@@ -71,10 +74,8 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
   const activeLeft = activeSpread.leftPage;
   const activeRight = activeSpread.rightPage;
 
+  // Audio tracks library
   const [audioTracks, setAudioTracks] = useState<AudioTrack[]>([]);
-  const [editingMarkerId, setEditingMarkerId] = useState<string | null>(null);
-  const storyTextareaRef = useRef<HTMLTextAreaElement>(null);
-
   useEffect(() => {
     getAllAudioTracks().then((tracks) => setAudioTracks(tracks));
     const handleUpdate = () => {
@@ -84,40 +85,57 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     return () => window.removeEventListener('butterfly_audio_library_updated', handleUpdate);
   }, []);
 
-  // Active page typography & capacity calculations
-  const typo = activeRight.typography || {};
-  const activeFont = typo.fontFamily || 'Caveat';
-  const activeFontSize = typo.fontSize || 34;
-  const activeColor = typo.color || '#17120F';
-  const activeLineHeight = typo.lineHeight || 1.55;
-  const activeParaSpacing = typo.paragraphSpacing !== undefined ? typo.paragraphSpacing : 28;
-  const activeAlign = typo.textAlign || 'left';
+  // Built-in audio track options to complement uploaded tracks
+  const availableTracks = useMemo(() => {
+    const defaultTrackOptions: AudioTrack[] = [
+      {
+        id: 'track_remo_first_sight',
+        name: 'Remo — First Sight BGM',
+        fileName: 'remo_first_sight.mp3',
+        type: 'audio/mpeg',
+        size: 2150000,
+        duration: 48,
+        createdAt: 1731000000000,
+      },
+      {
+        id: 'sample_our_evening',
+        name: 'Our Evening ♡ (Default Theme)',
+        fileName: 'our_evening.mp3',
+        type: 'audio/mpeg',
+        size: 1587644,
+        duration: 32,
+        createdAt: 1731070000000,
+      },
+    ];
 
-  // Capacity calculation for right page:
-  const allWords = activeRight.storyParagraphs.join(' ').trim().split(/\s+/).filter(Boolean);
-  const wordsCount = allWords.length;
-  const nonBlankParas = activeRight.storyParagraphs.filter((p) => p.trim().length > 0);
+    const map = new Map<string, AudioTrack>();
+    defaultTrackOptions.forEach((t) => map.set(t.id, t));
+    audioTracks.forEach((t) => map.set(t.id, t));
+    return Array.from(map.values());
+  }, [audioTracks]);
 
-  // Usable text width on canvas is 734px. Avg character width in handwriting font is approx fontSize * 0.43
-  const avgCharW = activeFontSize * 0.43;
-  const charsPerLine = Math.max(22, Math.floor(734 / avgCharW));
+  // Main story document local text state (syncs cleanly with storyParagraphs)
+  const storyTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const savedCursorPos = useRef<number>(0);
+  const [documentText, setDocumentText] = useState(() =>
+    activeRight.storyParagraphs.join('\n\n')
+  );
 
-  let estTotalLines = 0;
-  nonBlankParas.forEach((p) => {
-    const linesInPara = Math.max(1, Math.ceil(p.length / charsPerLine));
-    estTotalLines += linesInPara;
-  });
+  // Synchronize documentText when active spread or side changes, or during undo/redo
+  useEffect(() => {
+    const currentJoined = activeRight.storyParagraphs.join('\n\n');
+    const localTrimmed = documentText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    const externalTrimmed = activeRight.storyParagraphs.map((p) => p.trim()).filter(Boolean);
+    const isDifferent =
+      localTrimmed.length !== externalTrimmed.length ||
+      localTrimmed.some((p, i) => p !== externalTrimmed[i]);
 
-  const linePx = Math.round(activeFontSize * activeLineHeight);
-  const totalTextHeightPx = (estTotalLines * linePx) + (Math.max(0, nonBlankParas.length - 1) * activeParaSpacing);
-  const usableHeightPx = 760; // 1082 canvas - 240 header - 82 bottom margin
-  const capacityPct = Math.round((totalTextHeightPx / usableHeightPx) * 100);
+    if (isDifferent) {
+      setDocumentText(currentJoined);
+    }
+  }, [activeSpreadIdx, activeSide, activeRight.storyParagraphs]);
 
-  // Scaled typography for live preview
-  const previewFontSize = `${Math.round(activeFontSize * 0.58)}px`;
-  const previewParaGap = `${Math.round(activeParaSpacing * 0.38)}px`;
-
-  // Update spread helper
+  // Spread updater helper
   const updateActiveSpread = (
     updater: (spread: StorySpreadContent) => StorySpreadContent
   ) => {
@@ -132,7 +150,6 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     });
   };
 
-  // Update Left Page
   const updateLeftPage = (updater: (left: PageLeftContent) => PageLeftContent) => {
     updateActiveSpread((sp) => ({
       ...sp,
@@ -140,7 +157,6 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     }));
   };
 
-  // Update Right Page
   const updateRightPage = (updater: (right: PageRightContent) => PageRightContent) => {
     updateActiveSpread((sp) => ({
       ...sp,
@@ -148,7 +164,15 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     }));
   };
 
-  // Update Right Page Typography
+  // Typography controls
+  const typo = activeRight.typography || {};
+  const activeFont = typo.fontFamily || 'Caveat';
+  const activeFontSize = typo.fontSize || 34;
+  const activeColor = typo.color || '#17120F';
+  const activeLineHeight = typo.lineHeight || 1.55;
+  const activeParaSpacing = typo.paragraphSpacing !== undefined ? typo.paragraphSpacing : 28;
+  const activeAlign = typo.textAlign || 'left';
+
   const updateTypography = (updater: (prev: PageTypography) => PageTypography) => {
     updateRightPage((r) => ({
       ...r,
@@ -174,99 +198,351 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     }));
   };
 
-  const handleInsertMusicNote = () => {
-    const textarea = storyTextareaRef.current;
-    const markerId = `m_${Date.now()}`;
-    const markerTag = `[[music:${markerId}]]`;
+  // Capacity & human-friendly overflow calculations
+  const allWords = activeRight.storyParagraphs.join(' ').trim().split(/\s+/).filter(Boolean);
+  const wordsCount = allWords.length;
+  const nonBlankParas = activeRight.storyParagraphs.filter((p) => p.trim().length > 0);
 
-    const currentText = activeRight.storyParagraphs.join('\n\n');
-    let newText = '';
-    if (textarea) {
-      const start = textarea.selectionStart;
-      const end = textarea.selectionEnd;
-      newText = currentText.substring(0, start) + ' ' + markerTag + ' ' + currentText.substring(end);
+  const avgCharW = activeFontSize * 0.43;
+  const charsPerLine = Math.max(22, Math.floor(734 / avgCharW));
+
+  let estTotalLines = 0;
+  nonBlankParas.forEach((p) => {
+    const linesInPara = Math.max(1, Math.ceil(p.length / charsPerLine));
+    estTotalLines += linesInPara;
+  });
+
+  const linePx = Math.round(activeFontSize * activeLineHeight);
+  const totalTextHeightPx =
+    estTotalLines * linePx + Math.max(0, nonBlankParas.length - 1) * activeParaSpacing;
+  const usableHeightPx = 760;
+  const capacityPct = Math.round((totalTextHeightPx / usableHeightPx) * 100);
+
+  // Human-friendly overflow guidance status
+  const overflowStatus = useMemo(() => {
+    if (capacityPct <= 78) {
+      return {
+        level: 'good' as const,
+        icon: '🟢',
+        title: 'This page looks good.',
+        subtitle: 'Comfortable breathing room & margins.',
+        className: styles.guidancePillGood,
+      };
+    } else if (capacityPct <= 102) {
+      return {
+        level: 'warning' as const,
+        icon: '🟡',
+        title: 'This page is getting full.',
+        subtitle: 'Fills the physical page comfortably.',
+        className: styles.guidancePillWarning,
+      };
     } else {
-      newText = currentText + ' ' + markerTag;
+      return {
+        level: 'overflow' as const,
+        icon: '🟠',
+        title: 'Some text may be cut off. Consider moving a paragraph to the next page.',
+        subtitle: 'Text extends beyond boundary.',
+        className: styles.guidancePillOverflow,
+      };
+    }
+  }, [capacityPct]);
+
+  // Scaled typography for live preview
+  const isPreviewOnly = viewMode === 'preview-only';
+  const previewFontSize = isPreviewOnly
+    ? `${activeFontSize}px`
+    : `${Math.max(16, Math.round(activeFontSize * 0.68))}px`;
+  const previewParaGap = isPreviewOnly
+    ? `${activeParaSpacing}px`
+    : `${Math.max(10, Math.round(activeParaSpacing * 0.55))}px`;
+
+  // Main textarea change handler
+  const handleDocumentTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setDocumentText(newText);
+    const rawParas = newText.split(/\n\s*\n/);
+    const paras = rawParas.map((p) => p.trim()).filter(Boolean);
+    updateRightPage((r) => ({
+      ...r,
+      storyParagraphs: paras.length > 0 ? paras : newText.trim() ? [newText.trim()] : [],
+    }));
+  };
+
+  // Document paragraph helper actions
+  const handleAddParagraph = () => {
+    const newText = documentText.trimEnd() + '\n\n';
+    setDocumentText(newText);
+    setTimeout(() => {
+      if (storyTextareaRef.current) {
+        storyTextareaRef.current.focus();
+        storyTextareaRef.current.selectionStart = newText.length;
+        storyTextareaRef.current.selectionEnd = newText.length;
+      }
+    }, 20);
+  };
+
+  const handleSplitAtCursor = () => {
+    const textarea = storyTextareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const newText = documentText.substring(0, start) + '\n\n' + documentText.substring(end);
+    setDocumentText(newText);
+    const paras = newText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+    updateRightPage((r) => ({ ...r, storyParagraphs: paras }));
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = start + 2;
+      textarea.selectionEnd = start + 2;
+    }, 20);
+  };
+
+  const handleMergeParagraphs = () => {
+    const newText = documentText.replace(/\n\s*\n/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    setDocumentText(newText);
+    updateRightPage((r) => ({ ...r, storyParagraphs: [newText] }));
+  };
+
+  // Text formatting helpers for Bold and Italic
+  const handleFormatWrap = (prefix: string, suffix: string) => {
+    const textarea = storyTextareaRef.current;
+    if (!textarea) return;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selected = documentText.substring(start, end);
+
+    let newText = '';
+    let newCursorPos = start;
+
+    if (
+      selected.startsWith(prefix) &&
+      selected.endsWith(suffix) &&
+      selected.length >= prefix.length + suffix.length
+    ) {
+      // Unwrap
+      newText =
+        documentText.substring(0, start) +
+        selected.slice(prefix.length, -suffix.length) +
+        documentText.substring(end);
+      newCursorPos = start + selected.length - prefix.length - suffix.length;
+    } else {
+      // Wrap
+      newText =
+        documentText.substring(0, start) +
+        `${prefix}${selected}${suffix}` +
+        documentText.substring(end);
+      newCursorPos = start + selected.length + prefix.length + suffix.length;
     }
 
+    setDocumentText(newText);
     const paras = newText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-    const defaultTrack = audioTracks[0] || {
-      id: 'sample_our_evening',
-      name: 'Our Evening ♡',
+    updateRightPage((r) => ({ ...r, storyParagraphs: paras }));
+
+    setTimeout(() => {
+      textarea.focus();
+      textarea.selectionStart = newCursorPos;
+      textarea.selectionEnd = newCursorPos;
+    }, 20);
+  };
+
+  // Music Marker Modal State & Handlers
+  const [musicModalOpen, setMusicModalOpen] = useState(false);
+  const [musicModalMode, setMusicModalMode] = useState<'create' | 'edit'>('create');
+  const [modalMarkerId, setModalMarkerId] = useState<string>('');
+  const [modalTrackId, setModalTrackId] = useState<string>('track_remo_first_sight');
+  const [modalTitle, setModalTitle] = useState<string>('Remo — First Sight BGM');
+  const [modalColor, setModalColor] = useState<string>('#D32F2F');
+  const [modalSize, setModalSize] = useState<number>(26);
+  const [modalLoop, setModalLoop] = useState<boolean>(true);
+  const [modalStart, setModalStart] = useState<number>(0);
+  const [modalEnd, setModalEnd] = useState<number | undefined>(undefined);
+
+  const openInsertMusicModal = () => {
+    const textarea = storyTextareaRef.current;
+    savedCursorPos.current = textarea ? textarea.selectionStart : documentText.length;
+
+    const newId = `m_${Date.now()}`;
+    const defaultTrack = availableTracks[0] || {
+      id: 'track_remo_first_sight',
+      name: 'Remo — First Sight BGM',
     };
 
-    const newMarker: MusicMarker = {
-      id: markerId,
-      trackId: defaultTrack.id,
-      title: defaultTrack.name,
+    setModalMarkerId(newId);
+    setModalTrackId(defaultTrack.id);
+    setModalTitle(defaultTrack.name);
+    setModalColor('#D32F2F');
+    setModalSize(26);
+    setModalLoop(true);
+    setModalStart(0);
+    setModalEnd(undefined);
+    setMusicModalMode('create');
+    setMusicModalOpen(true);
+  };
+
+  const openEditMusicModal = (mId: string) => {
+    const marker = activeRight.musicMarkers?.[mId] || {
+      id: mId,
+      trackId: 'track_remo_first_sight',
+      title: 'Our Melody ♡',
+      color: '#D32F2F',
+      size: 26,
       loop: true,
     };
 
-    updateRightPage((r) => ({
-      ...r,
-      storyParagraphs: paras,
-      musicMarkers: {
-        ...(r.musicMarkers || {}),
-        [markerId]: newMarker,
-      },
-    }));
-
-    setEditingMarkerId(markerId);
+    setModalMarkerId(mId);
+    setModalTrackId(marker.trackId);
+    setModalTitle(marker.title || 'Our Melody ♡');
+    setModalColor(marker.color || '#D32F2F');
+    setModalSize(marker.size || 26);
+    setModalLoop(marker.loop !== false);
+    setModalStart(marker.startTime || 0);
+    setModalEnd(marker.endTime);
+    setMusicModalMode('edit');
+    setMusicModalOpen(true);
   };
 
-  const handleUpdateMusicMarker = (markerId: string, updates: Partial<MusicMarker>) => {
-    updateRightPage((r) => {
-      const existing = r.musicMarkers?.[markerId] || {
-        id: markerId,
-        trackId: 'sample_our_evening',
-        title: 'Our Evening ♡',
-        loop: true,
-      };
-      return {
+  const handleSaveMusicModal = () => {
+    const marker: MusicMarker = {
+      id: modalMarkerId,
+      trackId: modalTrackId,
+      title: modalTitle.trim() || 'Our Melody ♡',
+      color: modalColor,
+      size: modalSize,
+      loop: modalLoop,
+      startTime: modalStart,
+      endTime: modalEnd,
+      enabled: true,
+    };
+
+    if (musicModalMode === 'create') {
+      const start = savedCursorPos.current;
+      const before = documentText.slice(0, start);
+      const after = documentText.slice(start);
+      const markerTag = `[[music:${modalMarkerId}]]`;
+
+      const needsSpaceBefore =
+        before.length > 0 && !before.endsWith(' ') && !before.endsWith('\n');
+      const needsSpaceAfter =
+        after.length > 0 &&
+        !after.startsWith(' ') &&
+        !after.startsWith('\n') &&
+        !after.startsWith('.') &&
+        !after.startsWith(',');
+
+      const newText =
+        before + (needsSpaceBefore ? ' ' : '') + markerTag + (needsSpaceAfter ? ' ' : '') + after;
+
+      setDocumentText(newText);
+      const paras = newText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+
+      updateRightPage((r) => ({
+        ...r,
+        storyParagraphs: paras,
+        musicMarkers: {
+          ...(r.musicMarkers || {}),
+          [modalMarkerId]: marker,
+        },
+      }));
+    } else {
+      updateRightPage((r) => ({
         ...r,
         musicMarkers: {
           ...(r.musicMarkers || {}),
-          [markerId]: { ...existing, ...updates },
+          [modalMarkerId]: marker,
         },
-      };
-    });
+      }));
+    }
+
+    setMusicModalOpen(false);
   };
 
   const handleDeleteMusicMarker = (markerId: string) => {
     const markerTagRegex = new RegExp(`\\[\\[music:${markerId}\\]\\]`, 'g');
-    const cleanedParas = activeRight.storyParagraphs.map((p) =>
-      p.replace(markerTagRegex, '').replace(/\s{2,}/g, ' ').trim()
-    ).filter(Boolean);
+    const newText = documentText.replace(markerTagRegex, '').replace(/\s{2,}/g, ' ');
+    setDocumentText(newText);
 
+    const paras = newText.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
     updateRightPage((r) => {
       const remainingMarkers = { ...(r.musicMarkers || {}) };
       delete remainingMarkers[markerId];
       return {
         ...r,
-        storyParagraphs: cleanedParas,
+        storyParagraphs: paras,
         musicMarkers: remainingMarkers,
       };
     });
-
-    if (editingMarkerId === markerId) {
-      setEditingMarkerId(null);
-    }
   };
 
+  // Reorder Paragraphs Modal State & Handlers
+  const [reorderModalOpen, setReorderModalOpen] = useState(false);
+
+  const handleMoveParagraph = (fromIdx: number, direction: -1 | 1) => {
+    const toIdx = fromIdx + direction;
+    if (toIdx < 0 || toIdx >= activeRight.storyParagraphs.length) return;
+
+    const nextParas = [...activeRight.storyParagraphs];
+    const temp = nextParas[fromIdx];
+    nextParas[fromIdx] = nextParas[toIdx];
+    nextParas[toIdx] = temp;
+
+    const newText = nextParas.join('\n\n');
+    setDocumentText(newText);
+    updateRightPage((r) => ({ ...r, storyParagraphs: nextParas }));
+  };
+
+  const handleDeleteParagraphFromList = (idx: number) => {
+    const nextParas = activeRight.storyParagraphs.filter((_, i) => i !== idx);
+    const newText = nextParas.join('\n\n');
+    setDocumentText(newText);
+    updateRightPage((r) => ({ ...r, storyParagraphs: nextParas }));
+  };
+
+  // Render markdown bold and italic in preview
+  const renderFormattedText = (text: string) => {
+    const tokens = text.split(/(\*\*.*?\*\*|\*[^*]+?\*)/g);
+    return tokens.map((tok, i) => {
+      if (tok.startsWith('**') && tok.endsWith('**') && tok.length >= 4) {
+        return (
+          <strong key={i} style={{ fontWeight: 700 }}>
+            {tok.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (tok.startsWith('*') && tok.endsWith('*') && tok.length >= 2) {
+        return (
+          <em key={i} style={{ fontStyle: 'italic' }}>
+            {tok.slice(1, -1)}
+          </em>
+        );
+      }
+      return tok;
+    });
+  };
+
+  // Render physical preview paragraph with clickable music note badges
   const renderPreviewParagraph = (para: string) => {
     const parts = para.split(/(\[\[music:[a-zA-Z0-9_\-]+\]\][,\.!?;:]*)/g);
     return parts.map((part, pIdx) => {
       const match = part.match(/^\[\[music:([a-zA-Z0-9_\-]+)\]\]([,\.!?;:]*)$/);
-      if (!match) return part;
+      if (!match) {
+        return <React.Fragment key={pIdx}>{renderFormattedText(part)}</React.Fragment>;
+      }
 
       const markerId = match[1];
       const punct = match[2] || '';
       const marker = activeRight.musicMarkers?.[markerId] || {
         id: markerId,
-        trackId: 'sample_our_evening',
-        title: 'Our Evening ♡',
+        trackId: 'track_remo_first_sight',
+        title: 'Remo — First Sight BGM',
+        color: '#D32F2F',
+        size: 26,
         loop: true,
       };
+
+      const customColor = marker.color || '#D32F2F';
+      const badgeSize = isPreviewOnly
+        ? marker.size || 26
+        : Math.max(18, Math.round((marker.size || 26) * 0.85));
 
       return (
         <span key={pIdx} style={{ display: 'inline-flex', alignItems: 'center' }}>
@@ -276,29 +552,46 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              width: '24px',
-              height: '24px',
+              width: `${badgeSize}px`,
+              height: `${badgeSize}px`,
               borderRadius: '50%',
               margin: '0 4px',
-              background: 'radial-gradient(circle at 35% 35%, #fef0bc 0%, #f5ba58 60%, #db8a2a 100%)',
-              border: '1px solid rgba(120, 68, 18, 0.45)',
-              boxShadow: '0 2px 6px rgba(215, 140, 40, 0.45)',
+              background: `radial-gradient(circle at 35% 35%, #ff8a80 0%, ${customColor} 60%, #8b0000 100%)`,
+              boxShadow: `0 2px 8px ${customColor}88, 0 1px 3px rgba(0, 0, 0, 0.3)`,
+              border: '1px solid rgba(255, 255, 255, 0.45)',
               cursor: 'pointer',
-              color: '#17120F',
-              fontFamily: 'Caveat, cursive, sans-serif',
+              color: '#ffffff',
+              fontFamily: "'Caveat', cursive, sans-serif",
               fontWeight: 700,
-              fontSize: '14px',
+              fontSize: `${Math.round(badgeSize * 0.58)}px`,
               padding: 0,
               verticalAlign: 'middle',
+              position: 'relative',
+              transition: 'transform 0.15s ease',
             }}
             onClick={(e) => {
               e.stopPropagation();
               const rect = e.currentTarget.getBoundingClientRect();
-              audioPlayer.playMarker(marker, { x: rect.left + rect.width / 2, y: rect.top });
+              audioPlayer.playMarker(marker, {
+                x: rect.left + rect.width / 2,
+                y: rect.top,
+              });
             }}
             title={`Play "${marker.title}" (Click to test audio)`}
           >
             ♫
+            <span
+              style={{
+                position: 'absolute',
+                top: '-3px',
+                right: '-3px',
+                fontSize: '9px',
+                color: '#fff9c4',
+                pointerEvents: 'none',
+              }}
+            >
+              ✧
+            </span>
           </button>
           {punct}
         </span>
@@ -306,7 +599,7 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     });
   };
 
-  // Sticker updates from canvas
+  // Sticker updates for Left Page canvas
   const handleUpdateStickers = (stickers: StickerItem[]) => {
     if (activeSide === 'left') {
       updateLeftPage((l) => ({ ...l, stickers }));
@@ -315,7 +608,6 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     }
   };
 
-  // Insert sticker from Media Picker
   const handleSelectMediaForSticker = (asset: MediaAsset, url: string) => {
     setShowMediaPicker(false);
     const newSticker: StickerItem = {
@@ -339,6 +631,19 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     }
   };
 
+  // Extract all active music markers referenced on the current right page
+  const activePageMarkerIds = useMemo(() => {
+    const text = activeRight.storyParagraphs.join('\n\n');
+    const matchedIds: string[] = [];
+    const regex = /\[\[music:([a-zA-Z0-9_\-]+)\]\]/g;
+    let m: RegExpExecArray | null;
+    while ((m = regex.exec(text)) !== null) {
+      if (!matchedIds.includes(m[1])) matchedIds.push(m[1]);
+    }
+    const registeredIds = Object.keys(activeRight.musicMarkers || {});
+    return Array.from(new Set([...matchedIds, ...registeredIds]));
+  }, [activeRight.storyParagraphs, activeRight.musicMarkers]);
+
   return (
     <div>
       {/* Spread & Page Navigator Row */}
@@ -358,8 +663,8 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
           ))}
         </div>
 
-        {/* Side Toggle: Left (Photos) vs Right (Story) */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+        {/* Side Toggle & View Modes */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px', flexWrap: 'wrap' }}>
           <div className={styles.pageSideToggle}>
             <button
               type="button"
@@ -381,12 +686,38 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
             </button>
           </div>
 
+          {/* Right Page View Mode Toggle: Split vs Preview Only */}
+          {activeSide === 'right' && (
+            <div className={styles.pageSideToggle}>
+              <button
+                type="button"
+                className={`${styles.sideBtn} ${
+                  viewMode === 'split' ? styles.sideBtnActive : ''
+                }`}
+                onClick={() => setViewMode('split')}
+                title="Split document editor and live page preview"
+              >
+                ✍️ Split View
+              </button>
+              <button
+                type="button"
+                className={`${styles.sideBtn} ${
+                  viewMode === 'preview-only' ? styles.sideBtnActive : ''
+                }`}
+                onClick={() => setViewMode('preview-only')}
+                title="Distraction-free full size reading preview"
+              >
+                📖 Preview Only
+              </button>
+            </div>
+          )}
+
           {/* Undo / Redo */}
           <div style={{ display: 'flex', gap: '4px' }}>
             <button
               type="button"
               className={styles.btnSecondary}
-              style={{ padding: '6px 10px' }}
+              style={{ padding: '6px 10px', fontSize: '0.80rem' }}
               onClick={handleUndo}
               title="Undo last change"
             >
@@ -395,7 +726,7 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
             <button
               type="button"
               className={styles.btnSecondary}
-              style={{ padding: '6px 10px' }}
+              style={{ padding: '6px 10px', fontSize: '0.80rem' }}
               onClick={handleRedo}
               title="Redo"
             >
@@ -405,51 +736,202 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
         </div>
       </div>
 
-      {/* Editor Workspace: Visual Canvas + Form Inspector */}
-      <div className={styles.editorWorkspace}>
-        {/* Left Column: Interactive Visual Canvas */}
-        <div className={styles.canvasColumn}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-gold-primary)' }}>
-              Interactive Visual Page ({activeSide === 'left' ? 'Page ' + (activeSpreadIdx * 2 + 1) : 'Page ' + (activeSpreadIdx * 2 + 2)})
-            </span>
-            <button
-              type="button"
-              className={styles.btnPrimary}
-              style={{ padding: '6px 14px', fontSize: '0.78rem' }}
-              onClick={() => setShowMediaPicker(true)}
-            >
-              + Add Sticker / Animated GIF
-            </button>
-          </div>
+      {/* =========================================================================
+          RIGHT PAGE NARRATIVE MODE (SIMPLIFIED DOCUMENT WRITING EXPERIENCE)
+          ========================================================================= */}
+      {activeSide === 'right' && (
+        <>
+          {viewMode === 'preview-only' ? (
+            /* ----------------- PREVIEW-ONLY MODE (FULL SIZE READING) ----------------- */
+            <div className={styles.narrativeLayoutPreviewOnly}>
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  width: '100%',
+                  maxWidth: '760px',
+                }}
+              >
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem' }}
+                  onClick={() => setViewMode('split')}
+                >
+                  <span>←</span> Return to Writing Studio
+                </button>
+                <div className={`${styles.guidancePill} ${overflowStatus.className}`} style={{ width: 'auto' }}>
+                  <span>
+                    {overflowStatus.icon} {overflowStatus.title} ({wordsCount} words · {nonBlankParas.length} paragraphs)
+                  </span>
+                </div>
+              </div>
 
-          <div className={styles.canvasBoardWrapper}>
-            <StickerCanvas
-              stickers={activeSide === 'left' ? activeLeft.stickers : activeRight.stickers}
-              onUpdateStickers={handleUpdateStickers}
-              backgroundSrc={
-                activeSide === 'left'
-                  ? '/storybook/studio_page_blank_left.jpg'
-                  : '/storybook/studio_page_blank_right.jpg'
-              }
-            >
-              {/* Overlay preview of text / polaroid content for realistic placement */}
-              {activeSide === 'right' ? (
-                <div style={{ padding: '36px 32px', pointerEvents: 'none', userSelect: 'none', position: 'relative', height: '100%' }}>
-                  {/* Butterfly flight loop doodle in top right */}
+              {/* Full-size readable physical page */}
+              <div className={`${styles.readablePhysicalPage} ${styles.readablePhysicalPageFullSize}`}>
+                <img
+                  src="/storybook/assets/doodle_butterfly.png"
+                  alt=""
+                  style={{ position: 'absolute', top: '24px', right: '32px', width: '80px', opacity: 0.95 }}
+                />
+
+                {activeRight.dateOrLocation && (
+                  <div style={{ textAlign: 'right', marginBottom: '14px' }}>
+                    <span
+                      style={{
+                        fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                        fontSize: '32px',
+                        color: activeColor,
+                        fontWeight: 600,
+                      }}
+                    >
+                      {activeRight.dateOrLocation}
+                    </span>
+                    <div
+                      style={{
+                        width: '90px',
+                        height: '2px',
+                        background: activeColor,
+                        marginLeft: 'auto',
+                        marginTop: '-2px',
+                      }}
+                    />
+                  </div>
+                )}
+
+                {activeRight.chapterNumber && (
+                  <div style={{ position: 'relative', display: 'inline-block', marginBottom: '6px' }}>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '2px',
+                        left: '-6px',
+                        width: 'calc(100% + 14px)',
+                        height: '18px',
+                        background: 'rgba(235, 160, 175, 0.45)',
+                        borderRadius: '4px',
+                      }}
+                    />
+                    <span
+                      style={{
+                        position: 'relative',
+                        zIndex: 2,
+                        fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                        fontSize: '30px',
+                        fontWeight: 700,
+                        color: activeColor,
+                      }}
+                    >
+                      {activeRight.chapterNumber}
+                    </span>
+                  </div>
+                )}
+
+                {activeRight.chapterTitle && (
+                  <div style={{ position: 'relative', display: 'block', marginBottom: '22px' }}>
+                    <div
+                      style={{
+                        position: 'absolute',
+                        bottom: '4px',
+                        left: '-8px',
+                        width: 'calc(100% + 18px)',
+                        height: '22px',
+                        background: 'rgba(235, 160, 175, 0.45)',
+                        borderRadius: '6px',
+                      }}
+                    />
+                    <h2
+                      style={{
+                        position: 'relative',
+                        zIndex: 2,
+                        fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                        fontSize: '40px',
+                        fontWeight: 700,
+                        color: activeColor,
+                        margin: 0,
+                      }}
+                    >
+                      {activeRight.chapterTitle}
+                    </h2>
+                  </div>
+                )}
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: previewParaGap }}>
+                  {activeRight.storyParagraphs.map((para, pIdx) => (
+                    <p
+                      key={pIdx}
+                      style={{
+                        fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                        fontSize: previewFontSize,
+                        lineHeight: activeLineHeight,
+                        color: activeColor,
+                        margin: 0,
+                        textAlign: activeAlign,
+                      }}
+                    >
+                      {renderPreviewParagraph(para)}
+                    </p>
+                  ))}
+                </div>
+
+                {activeRight.signature && (
+                  <div style={{ textAlign: 'right', marginTop: '22px' }}>
+                    <span
+                      style={{
+                        fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                        fontStyle: 'italic',
+                        fontSize: `calc(${previewFontSize} * 0.95)`,
+                        color: activeColor,
+                      }}
+                    >
+                      {activeRight.signature}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <NowPlayingPill />
+            </div>
+          ) : (
+            /* ----------------- SPLIT VIEW MODE (EDITOR + LIVE PREVIEW) ----------------- */
+            <div className={styles.narrativeLayoutSplit}>
+              {/* Left Side: Readable Live Physical Book Preview */}
+              <div className={styles.readablePreviewWrapper}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                  <span style={{ fontSize: '0.80rem', fontWeight: 600, color: 'var(--admin-gold-primary)' }}>
+                    Live Physical Page (Page {activeSpreadIdx * 2 + 2})
+                  </span>
+                  <button
+                    type="button"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--admin-gold-bright)',
+                      fontSize: '0.74rem',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                    onClick={() => setViewMode('preview-only')}
+                  >
+                    📖 Enlarge Full Page
+                  </button>
+                </div>
+
+                {/* Scaled Physical Page */}
+                <div className={styles.readablePhysicalPage}>
                   <img
                     src="/storybook/assets/doodle_butterfly.png"
                     alt=""
-                    style={{ position: 'absolute', top: '18px', right: '24px', width: '60px', opacity: 0.95 }}
+                    style={{ position: 'absolute', top: '16px', right: '20px', width: '55px', opacity: 0.95 }}
                   />
 
-                  {/* Top-Right Date with Pen Underline */}
                   {activeRight.dateOrLocation && (
-                    <div style={{ textAlign: 'right', marginBottom: '8px' }}>
+                    <div style={{ textAlign: 'right', marginBottom: '6px' }}>
                       <span
                         style={{
-                          fontFamily: `"${activeFont}", 'Caveat', 'Patrick Hand', cursive, sans-serif`,
-                          fontSize: '24px',
+                          fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                          fontSize: '22px',
                           color: activeColor,
                           fontWeight: 600,
                         }}
@@ -458,7 +940,7 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                       </span>
                       <div
                         style={{
-                          width: '70px',
+                          width: '65px',
                           height: '2px',
                           background: activeColor,
                           marginLeft: 'auto',
@@ -468,9 +950,8 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                     </div>
                   )}
 
-                  {/* Chapter Header with Blush Highlight */}
                   {activeRight.chapterNumber && (
-                    <div style={{ position: 'relative', display: 'inline-block', marginBottom: '4px' }}>
+                    <div style={{ position: 'relative', display: 'inline-block', marginBottom: '2px' }}>
                       <div
                         style={{
                           position: 'absolute',
@@ -486,8 +967,8 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                         style={{
                           position: 'relative',
                           zIndex: 2,
-                          fontFamily: `"${activeFont}", 'Caveat', 'Patrick Hand', cursive, sans-serif`,
-                          fontSize: '22px',
+                          fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                          fontSize: '20px',
                           fontWeight: 700,
                           color: activeColor,
                         }}
@@ -497,16 +978,15 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                     </div>
                   )}
 
-                  {/* Chapter Title with Blush Highlight */}
                   {activeRight.chapterTitle && (
-                    <div style={{ position: 'relative', display: 'inline-block', marginBottom: '14px' }}>
+                    <div style={{ position: 'relative', display: 'block', marginBottom: '12px' }}>
                       <div
                         style={{
                           position: 'absolute',
                           bottom: '3px',
                           left: '-6px',
                           width: 'calc(100% + 14px)',
-                          height: '18px',
+                          height: '16px',
                           background: 'rgba(235, 160, 175, 0.45)',
                           borderRadius: '6px',
                         }}
@@ -515,8 +995,8 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                         style={{
                           position: 'relative',
                           zIndex: 2,
-                          fontFamily: `"${activeFont}", 'Caveat', 'Patrick Hand', cursive, sans-serif`,
-                          fontSize: '28px',
+                          fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                          fontSize: '26px',
                           fontWeight: 700,
                           color: activeColor,
                           margin: 0,
@@ -527,13 +1007,12 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                     </div>
                   )}
 
-                  {/* Handwritten Story Body in Pure Black Fountain Pen Ink flowing down */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: previewParaGap }}>
                     {activeRight.storyParagraphs.map((para, pIdx) => (
                       <p
                         key={pIdx}
                         style={{
-                          fontFamily: `"${activeFont}", 'Caveat', 'Patrick Hand', cursive, sans-serif`,
+                          fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
                           fontSize: previewFontSize,
                           lineHeight: activeLineHeight,
                           color: activeColor,
@@ -546,7 +1025,6 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                     ))}
                   </div>
 
-                  {/* Closing Signature if present */}
                   {activeRight.signature && (
                     <div style={{ textAlign: 'right', marginTop: '12px' }}>
                       <span
@@ -561,15 +1039,435 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                       </span>
                     </div>
                   )}
+                </div>
 
-                  {/* Pink Wildflower Sprig in Bottom Right */}
-                  <img
-                    src="/storybook/assets/flower_pink_sprig.png"
-                    alt=""
-                    style={{ position: 'absolute', bottom: '18px', right: '22px', width: '65px', opacity: 0.92 }}
+                {/* Friendly Page Guidance Pill (No scary 300% warning) */}
+                <div className={`${styles.guidancePill} ${overflowStatus.className}`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span>{overflowStatus.icon}</span>
+                    <span style={{ fontWeight: 600 }}>{overflowStatus.title}</span>
+                  </div>
+                  <span style={{ fontSize: '0.74rem', opacity: 0.85 }}>
+                    {wordsCount} words · {nonBlankParas.length} paras
+                  </span>
+                </div>
+
+                <NowPlayingPill />
+              </div>
+
+              {/* Right Side: Main Document Writing Studio */}
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
+                {/* A. Page Settings Card */}
+                <div className={styles.pageSettingsCard}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.76rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--admin-gold-primary)', fontWeight: 700 }}>
+                      Page Settings
+                    </span>
+                  </div>
+                  <div className={styles.pageSettingsGrid}>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Chapter Number</label>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        style={{ padding: '6px 10px', fontSize: '0.84rem' }}
+                        value={activeRight.chapterNumber}
+                        onChange={(e) => updateRightPage((r) => ({ ...r, chapterNumber: e.target.value }))}
+                        placeholder="e.g. Chapter I ♡"
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Chapter Title</label>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        style={{ padding: '6px 10px', fontSize: '0.84rem' }}
+                        value={activeRight.chapterTitle}
+                        onChange={(e) => updateRightPage((r) => ({ ...r, chapterTitle: e.target.value }))}
+                        placeholder="e.g. How It All Started"
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Date Caption</label>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        style={{ padding: '6px 10px', fontSize: '0.84rem' }}
+                        value={activeRight.dateOrLocation || ''}
+                        onChange={(e) => updateRightPage((r) => ({ ...r, dateOrLocation: e.target.value }))}
+                        placeholder="e.g. 18 March"
+                      />
+                    </div>
+                    <div className={styles.formGroup}>
+                      <label className={styles.formLabel}>Closing Signature</label>
+                      <input
+                        type="text"
+                        className={styles.formInput}
+                        style={{ padding: '6px 10px', fontSize: '0.84rem' }}
+                        value={activeRight.signature || ''}
+                        onChange={(e) => updateRightPage((r) => ({ ...r, signature: e.target.value }))}
+                        placeholder="e.g. Always yours, Elena ♡"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* B. Basic Formatting Toolbar */}
+                <div className={styles.documentToolbar}>
+                  {/* Font Family */}
+                  <div className={styles.toolbarGroup}>
+                    <select
+                      className={styles.formSelect}
+                      style={{ padding: '4px 8px', fontSize: '0.80rem', height: '32px' }}
+                      value={activeFont}
+                      onChange={(e) => updateTypography((t) => ({ ...t, fontFamily: e.target.value }))}
+                      title="Select handwriting font"
+                    >
+                      <option value="Caveat">Caveat (Diary Cursive)</option>
+                      <option value="Patrick Hand">Patrick Hand (Warm Handwritten)</option>
+                      <option value="Kalam">Kalam (Natural Fountain Pen)</option>
+                      <option value="Playfair Display">Playfair Display (Serif)</option>
+                      <option value="Cormorant Garamond">Cormorant Garamond (Romantic)</option>
+                    </select>
+                  </div>
+
+                  <div className={styles.toolbarDivider} />
+
+                  {/* Font Size (+ / - / slider) */}
+                  <div className={styles.toolbarGroup}>
+                    <button
+                      type="button"
+                      className={styles.toolbarBtn}
+                      onClick={() => updateTypography((t) => ({ ...t, fontSize: Math.max(20, (t.fontSize || 34) - 2) }))}
+                      title="Decrease font size"
+                    >
+                      A-
+                    </button>
+                    <span style={{ fontSize: '0.80rem', fontFamily: 'monospace', color: 'var(--admin-gold-bright)', minWidth: '34px', textAlign: 'center' }}>
+                      {activeFontSize}px
+                    </span>
+                    <button
+                      type="button"
+                      className={styles.toolbarBtn}
+                      onClick={() => updateTypography((t) => ({ ...t, fontSize: Math.min(52, (t.fontSize || 34) + 2) }))}
+                      title="Increase font size"
+                    >
+                      A+
+                    </button>
+                  </div>
+
+                  <div className={styles.toolbarDivider} />
+
+                  {/* Line Spacing */}
+                  <div className={styles.toolbarGroup} title={`Line spacing: ${activeLineHeight.toFixed(2)}x`}>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--admin-text-subtle)' }}>Line:</span>
+                    <input
+                      type="range"
+                      min={1.2}
+                      max={2.2}
+                      step={0.05}
+                      style={{ width: '65px', accentColor: 'var(--admin-gold-primary)' }}
+                      value={activeLineHeight}
+                      onChange={(e) => updateTypography((t) => ({ ...t, lineHeight: Number(e.target.value) }))}
+                    />
+                    <span style={{ fontSize: '0.74rem', fontFamily: 'monospace', color: 'var(--admin-text-subtle)' }}>
+                      {activeLineHeight.toFixed(2)}x
+                    </span>
+                  </div>
+
+                  <div className={styles.toolbarDivider} />
+
+                  {/* Ink Color Swatches + Native Picker */}
+                  <div className={styles.toolbarGroup}>
+                    {[
+                      { label: 'Deep Black', color: '#17120F' },
+                      { label: 'Dark Walnut', color: '#2B1810' },
+                      { label: 'Vintage Sepia', color: '#3E2A1E' },
+                      { label: 'Indigo Navy', color: '#161C28' },
+                    ].map((swatch) => (
+                      <button
+                        key={swatch.color}
+                        type="button"
+                        title={swatch.label}
+                        className={styles.colorSwatchBtn}
+                        style={{
+                          background: swatch.color,
+                          width: '20px',
+                          height: '20px',
+                          border:
+                            activeColor.toLowerCase() === swatch.color.toLowerCase()
+                              ? '2px solid var(--admin-gold-bright)'
+                              : '1px solid rgba(255,255,255,0.25)',
+                        }}
+                        onClick={() => updateTypography((t) => ({ ...t, color: swatch.color }))}
+                      />
+                    ))}
+                    <input
+                      type="color"
+                      value={activeColor}
+                      onChange={(e) => updateTypography((t) => ({ ...t, color: e.target.value }))}
+                      style={{ width: '22px', height: '22px', padding: 0, border: 'none', background: 'none', cursor: 'pointer' }}
+                      title="Custom Ink Color"
+                    />
+                  </div>
+
+                  <div className={styles.toolbarDivider} />
+
+                  {/* Alignment & Bold / Italic Helpers */}
+                  <div className={styles.toolbarGroup}>
+                    {(['left', 'center', 'right'] as const).map((align) => (
+                      <button
+                        key={align}
+                        type="button"
+                        className={`${styles.toolbarBtn} ${activeAlign === align ? styles.toolbarBtnActive : ''}`}
+                        onClick={() => updateTypography((t) => ({ ...t, textAlign: align }))}
+                        title={`Align ${align}`}
+                      >
+                        {align === 'left' ? '⯸' : align === 'center' ? '⯹' : '⯺'}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      className={styles.toolbarBtn}
+                      onClick={() => handleFormatWrap('**', '**')}
+                      title="Bold selection"
+                      style={{ fontWeight: 800 }}
+                    >
+                      B
+                    </button>
+                    <button
+                      type="button"
+                      className={styles.toolbarBtn}
+                      onClick={() => handleFormatWrap('*', '*')}
+                      title="Italicize selection"
+                      style={{ fontStyle: 'italic' }}
+                    >
+                      I
+                    </button>
+                  </div>
+
+                  <div className={styles.toolbarDivider} />
+
+                  <button
+                    type="button"
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--admin-text-subtle)',
+                      fontSize: '0.74rem',
+                      cursor: 'pointer',
+                      textDecoration: 'underline',
+                    }}
+                    onClick={handleResetTypography}
+                    title="Reset typography to defaults"
+                  >
+                    Reset
+                  </button>
+                </div>
+
+                {/* C. Main Writing Editor */}
+                <div className={styles.writingEditorCard}>
+                  <div className={styles.writingEditorHeader}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.80rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--admin-gold-primary)', fontWeight: 700 }}>
+                        Page Narrative
+                      </span>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--admin-text-subtle)' }}>
+                        (Write or paste naturally; paragraphs separate on empty lines)
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      {/* Insert Music Note Button (Prominent Action) */}
+                      <button
+                        type="button"
+                        className={styles.btnPrimary}
+                        style={{
+                          padding: '6px 14px',
+                          fontSize: '0.82rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'linear-gradient(135deg, #e5bd75 0%, #db8a2a 100%)',
+                          color: '#2b1504',
+                          fontWeight: 700,
+                        }}
+                        onClick={openInsertMusicModal}
+                        title="Place cursor where music should start, then click to insert a clickable note"
+                      >
+                        <span style={{ fontSize: '1rem' }}>♫</span>
+                        <span>Insert Music Note</span>
+                      </button>
+
+                      {/* Paragraph Helpers */}
+                      <button
+                        type="button"
+                        className={styles.toolbarBtn}
+                        onClick={handleAddParagraph}
+                        title="Append a new blank paragraph at the end"
+                      >
+                        + Add Para
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.toolbarBtn}
+                        onClick={handleSplitAtCursor}
+                        title="Split paragraph at cursor position"
+                      >
+                        Split Cursor
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.toolbarBtn}
+                        onClick={() => setReorderModalOpen(true)}
+                        title="Organize, reorder or delete individual paragraphs"
+                      >
+                        ↕ Organize ({nonBlankParas.length})
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Single Document Textarea */}
+                  <textarea
+                    ref={storyTextareaRef}
+                    className={styles.documentTextarea}
+                    style={{
+                      fontFamily: `"${activeFont}", 'Caveat', cursive, sans-serif`,
+                    }}
+                    value={documentText}
+                    onChange={handleDocumentTextChange}
+                    placeholder="Write your story freely across the page. Separate paragraphs with an empty line..."
                   />
                 </div>
-              ) : (
+
+                {/* D. Active Music Notes on this Page Tray */}
+                {activePageMarkerIds.length > 0 && (
+                  <div className={styles.musicTrayCard}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.76rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--admin-gold-primary)', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span>🎵</span> Active Music Notes on this Page ({activePageMarkerIds.length})
+                      </span>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-subtle)' }}>
+                        Embedded in text at cursor position
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {activePageMarkerIds.map((mId) => {
+                        const marker = activeRight.musicMarkers?.[mId] || {
+                          id: mId,
+                          trackId: 'track_remo_first_sight',
+                          title: 'Remo — First Sight BGM',
+                          color: '#D32F2F',
+                          size: 26,
+                          loop: true,
+                        };
+                        const markerColor = marker.color || '#D32F2F';
+
+                        return (
+                          <div key={mId} className={styles.musicMarkerItem}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <span
+                                style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: '26px',
+                                  height: '26px',
+                                  borderRadius: '50%',
+                                  background: `radial-gradient(circle at 35% 35%, #ff8a80 0%, ${markerColor} 60%, #8b0000 100%)`,
+                                  color: '#ffffff',
+                                  fontSize: '13px',
+                                  fontWeight: 700,
+                                  boxShadow: `0 2px 6px ${markerColor}66`,
+                                }}
+                              >
+                                ♫
+                              </span>
+                              <div>
+                                <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--admin-text-main)' }}>
+                                  {marker.title || 'Untitled Melody'}
+                                </div>
+                                <div style={{ fontSize: '0.70rem', color: 'var(--admin-text-subtle)' }}>
+                                  Track ID: {marker.trackId} · Color: {markerColor}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <button
+                                type="button"
+                                className={styles.toolbarBtn}
+                                style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                                onClick={() => audioPlayer.playMarker(marker)}
+                                title="Test play audio snippet"
+                              >
+                                ▶ Test Play
+                              </button>
+                              <button
+                                type="button"
+                                className={styles.toolbarBtn}
+                                style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                                onClick={() => openEditMusicModal(mId)}
+                                title="Edit song, title, color or size"
+                              >
+                                ⚙ Edit
+                              </button>
+                              <button
+                                type="button"
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--admin-danger)',
+                                  fontSize: '0.9rem',
+                                  cursor: 'pointer',
+                                  padding: '2px 6px',
+                                }}
+                                onClick={() => handleDeleteMusicMarker(mId)}
+                                title="Remove note from text and page"
+                              >
+                                🗑
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* =========================================================================
+          LEFT PAGE (PHOTOS & NOTES COLLAGE MODE)
+          ========================================================================= */}
+      {activeSide === 'left' && (
+        <div className={styles.editorWorkspace}>
+          {/* Left Column: Interactive Visual Canvas for Stickers & GIFs */}
+          <div className={styles.canvasColumn}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-gold-primary)' }}>
+                Left Page Scrapbook Collage (Page {activeSpreadIdx * 2 + 1})
+              </span>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                onClick={() => setShowMediaPicker(true)}
+              >
+                + Add Sticker / Animated GIF
+              </button>
+            </div>
+
+            <div className={styles.canvasBoardWrapper}>
+              <StickerCanvas
+                stickers={activeLeft.stickers}
+                onUpdateStickers={handleUpdateStickers}
+                backgroundSrc="/storybook/studio_page_blank_left.jpg"
+              >
                 <div style={{ padding: '24px 16px', pointerEvents: 'none', userSelect: 'none', height: '100%', position: 'relative' }}>
                   <div
                     style={{
@@ -594,7 +1492,6 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                           position: 'relative',
                         }}
                       >
-                        {/* Washi Tape Strip */}
                         <div
                           style={{
                             position: 'absolute',
@@ -611,7 +1508,6 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                           }}
                         />
 
-                        {/* Photo Image or fallback */}
                         <div
                           style={{
                             width: '100%',
@@ -634,7 +1530,6 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                           )}
                         </div>
 
-                        {/* Polaroid Caption in Black Ink Handwriting */}
                         <div
                           style={{
                             fontFamily: "'Caveat', 'Patrick Hand', cursive",
@@ -654,702 +1549,475 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                     ))}
                   </div>
                 </div>
-              )}
-            </StickerCanvas>
-            <NowPlayingPill />
+              </StickerCanvas>
+              <NowPlayingPill />
+            </div>
+            <span style={{ fontSize: '0.78rem', color: 'var(--admin-text-subtle)', textAlign: 'center' }}>
+              Tip: Click a sticker to select it. Drag to reposition, use bottom-right corner to resize, top handle to rotate.
+            </span>
           </div>
-          <span style={{ fontSize: '0.78rem', color: 'var(--admin-text-subtle)', textAlign: 'center' }}>
-            Tip: Click a sticker to select it. Drag to reposition, use bottom-right corner to resize, top handle to rotate.
-          </span>
-        </div>
 
-        {/* Right Column: Form Inspector */}
-        <div className={styles.inspectorColumn}>
-          <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '1.25rem', margin: 0, color: 'var(--admin-gold-primary)' }}>
-            {activeSide === 'left' ? 'Left Page Content' : 'Right Page Story Content'}
-          </h3>
+          {/* Right Column: Polaroid Photos & Handwritten Quotes Inspector */}
+          <div className={styles.inspectorColumn}>
+            <h3 style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '1.25rem', margin: 0, color: 'var(--admin-gold-primary)' }}>
+              Left Page Memories & Notes
+            </h3>
 
-          {activeSide === 'right' ? (
-            /* Right Page Narrative Form */
-            <>
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Chapter Number</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={activeRight.chapterNumber}
-                  onChange={(e) => updateRightPage((r) => ({ ...r, chapterNumber: e.target.value }))}
-                />
-              </div>
+            {activeLeft.photos.map((photo, pIdx) => (
+              <div
+                key={photo.id}
+                style={{
+                  background: 'rgba(28, 22, 16, 0.6)',
+                  border: '1px solid var(--admin-border)',
+                  borderRadius: '8px',
+                  padding: '14px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '10px',
+                }}
+              >
+                <span style={{ fontSize: '0.80rem', fontWeight: 700, color: 'var(--admin-gold-primary)' }}>
+                  Polaroid Memory {pIdx + 1}
+                </span>
 
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Chapter Title</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={activeRight.chapterTitle}
-                  onChange={(e) => updateRightPage((r) => ({ ...r, chapterTitle: e.target.value }))}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Location or Date Caption</label>
-                <input
-                  type="text"
-                  className={styles.formInput}
-                  value={activeRight.dateOrLocation || ''}
-                  onChange={(e) => updateRightPage((r) => ({ ...r, dateOrLocation: e.target.value }))}
-                />
-              </div>
-
-              {/* Typography & Handwriting Controls Card */}
-              <div className={styles.typographyCard}>
-                <div className={styles.typographyHeader}>
-                  <h4 className={styles.typographyTitle}>
-                    <span>✒️</span> Typography & Layout
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={handleResetTypography}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--admin-gold-primary)',
-                      fontSize: '0.72rem',
-                      cursor: 'pointer',
-                      textDecoration: 'underline',
-                    }}
-                  >
-                    Reset Defaults
-                  </button>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Photo Title / Caption</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={photo.title}
+                    onChange={(e) =>
+                      updateLeftPage((l) => {
+                        const nextPhotos = [...l.photos];
+                        nextPhotos[pIdx] = { ...nextPhotos[pIdx], title: e.target.value };
+                        return { ...l, photos: nextPhotos };
+                      })
+                    }
+                  />
                 </div>
 
-                {/* Font Family Selector */}
-                <div className={styles.formGroup} style={{ gap: '4px' }}>
-                  <label className={styles.formLabel}>Font Family</label>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Date Caption</label>
+                  <input
+                    type="text"
+                    className={styles.formInput}
+                    value={photo.date || ''}
+                    onChange={(e) =>
+                      updateLeftPage((l) => {
+                        const nextPhotos = [...l.photos];
+                        nextPhotos[pIdx] = { ...nextPhotos[pIdx], date: e.target.value };
+                        return { ...l, photos: nextPhotos };
+                      })
+                    }
+                  />
+                </div>
+
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Washi Tape Style</label>
                   <select
                     className={styles.formSelect}
-                    value={activeFont}
-                    onChange={(e) => updateTypography((t) => ({ ...t, fontFamily: e.target.value }))}
+                    value={photo.tapeStyle}
+                    onChange={(e) =>
+                      updateLeftPage((l) => {
+                        const nextPhotos = [...l.photos];
+                        nextPhotos[pIdx] = {
+                          ...nextPhotos[pIdx],
+                          tapeStyle: e.target.value as any,
+                        };
+                        return { ...l, photos: nextPhotos };
+                      })
+                    }
                   >
-                    <option value="Caveat">Caveat (Authentic Diary Cursive)</option>
-                    <option value="Patrick Hand">Patrick Hand (Warm Handwritten)</option>
-                    <option value="Kalam">Kalam (Natural Fountain Pen)</option>
-                    <option value="Playfair Display">Playfair Display (Editorial Serif)</option>
-                    <option value="Cormorant Garamond">Cormorant Garamond (Romantic Serif)</option>
+                    <option value="washi-pink">Washi Pink Ribbon</option>
+                    <option value="washi-gold">Washi Gold Leaf</option>
+                    <option value="corner-tabs">Corner Photo Tabs</option>
                   </select>
                 </div>
-
-                {/* Font Size (Slider + Numeric Box) */}
-                <div className={styles.formGroup} style={{ gap: '4px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className={styles.formLabel}>Font Size</label>
-                    <span style={{ fontSize: '0.76rem', color: 'var(--admin-gold-bright)', fontFamily: 'monospace' }}>
-                      {activeFontSize}px
-                    </span>
-                  </div>
-                  <div className={styles.sliderRow}>
-                    <input
-                      type="range"
-                      min={20}
-                      max={52}
-                      step={1}
-                      className={styles.sliderInput}
-                      value={activeFontSize}
-                      onChange={(e) => updateTypography((t) => ({ ...t, fontSize: Number(e.target.value) }))}
-                    />
-                    <input
-                      type="number"
-                      min={20}
-                      max={52}
-                      className={styles.sliderNumberBox}
-                      value={activeFontSize}
-                      onChange={(e) => updateTypography((t) => ({ ...t, fontSize: Number(e.target.value) || 34 }))}
-                    />
-                  </div>
-                </div>
-
-                {/* Ink Color Picker & Swatches */}
-                <div className={styles.formGroup} style={{ gap: '4px' }}>
-                  <label className={styles.formLabel}>Ink Color</label>
-                  <div className={styles.colorPickerRow}>
-                    <input
-                      type="color"
-                      className={styles.colorPickerNative}
-                      value={activeColor}
-                      onChange={(e) => updateTypography((t) => ({ ...t, color: e.target.value }))}
-                    />
-                    <input
-                      type="text"
-                      className={styles.colorPickerHex}
-                      value={activeColor}
-                      onChange={(e) => updateTypography((t) => ({ ...t, color: e.target.value }))}
-                    />
-                    <div className={styles.colorSwatches}>
-                      {[
-                        { label: 'Deep Black', color: '#17120F' },
-                        { label: 'Dark Walnut', color: '#2b1810' },
-                        { label: 'Vintage Sepia', color: '#3e2a1e' },
-                        { label: 'Indigo Navy', color: '#161c28' },
-                      ].map((swatch) => (
-                        <button
-                          key={swatch.color}
-                          type="button"
-                          title={swatch.label}
-                          className={styles.colorSwatchBtn}
-                          style={{
-                            background: swatch.color,
-                            border: activeColor.toLowerCase() === swatch.color.toLowerCase() ? '2px solid var(--admin-gold-bright)' : '1.5px solid rgba(255,255,255,0.25)',
-                          }}
-                          onClick={() => updateTypography((t) => ({ ...t, color: swatch.color }))}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Line Height Slider */}
-                <div className={styles.formGroup} style={{ gap: '4px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className={styles.formLabel}>Line Height</label>
-                    <span style={{ fontSize: '0.76rem', color: 'var(--admin-gold-bright)', fontFamily: 'monospace' }}>
-                      {activeLineHeight.toFixed(2)}x
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={1.2}
-                    max={2.2}
-                    step={0.05}
-                    className={styles.sliderInput}
-                    value={activeLineHeight}
-                    onChange={(e) => updateTypography((t) => ({ ...t, lineHeight: Number(e.target.value) }))}
-                  />
-                </div>
-
-                {/* Paragraph Spacing Slider */}
-                <div className={styles.formGroup} style={{ gap: '4px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <label className={styles.formLabel}>Paragraph Spacing</label>
-                    <span style={{ fontSize: '0.76rem', color: 'var(--admin-gold-bright)', fontFamily: 'monospace' }}>
-                      {activeParaSpacing}px
-                    </span>
-                  </div>
-                  <input
-                    type="range"
-                    min={10}
-                    max={50}
-                    step={2}
-                    className={styles.sliderInput}
-                    value={activeParaSpacing}
-                    onChange={(e) => updateTypography((t) => ({ ...t, paragraphSpacing: Number(e.target.value) }))}
-                  />
-                </div>
-
-                {/* Text Alignment */}
-                <div className={styles.formGroup} style={{ gap: '4px' }}>
-                  <label className={styles.formLabel}>Text Alignment</label>
-                  <div className={styles.segmentedButtonGroup}>
-                    {(['left', 'center', 'right'] as const).map((align) => (
-                      <button
-                        key={align}
-                        type="button"
-                        className={`${styles.segmentedButton} ${activeAlign === align ? styles.segmentedButtonActive : ''}`}
-                        onClick={() => updateTypography((t) => ({ ...t, textAlign: align }))}
-                      >
-                        {align === 'left' ? 'Left ⯸' : align === 'center' ? 'Center ⯹' : 'Right ⯺'}
-                      </button>
-                    ))}
-                  </div>
-                </div>
               </div>
+            ))}
 
-              {/* Multi-Paragraph Story Narrative Editor */}
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Handwritten Notes & Quotes (One per line)</label>
+              <textarea
+                className={styles.formTextarea}
+                style={{ minHeight: '120px' }}
+                value={activeLeft.handwrittenNotes.join('\n')}
+                placeholder="Enter quotes or handwritten notes..."
+                onChange={(e) => {
+                  const lines = e.target.value.split('\n');
+                  updateLeftPage((l) => ({ ...l, handwrittenNotes: lines }));
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MUSIC MARKER MODAL (INSERT OR EDIT MUSIC NOTE)
+          ========================================================================= */}
+      {musicModalOpen && (
+        <div className={styles.modalBackdrop} onClick={() => setMusicModalOpen(false)}>
+          <div
+            className={styles.modalContent}
+            style={{ maxWidth: '520px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ color: modalColor }}>♫</span>
+                <span>{musicModalMode === 'create' ? 'Insert Interactive Music Note' : 'Edit Music Note'}</span>
+              </h3>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => setMusicModalOpen(false)}
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className={styles.modalBody} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {/* Audio Track Selector */}
               <div className={styles.formGroup}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <label className={styles.formLabel}>Story Narrative (Full-Page Writing)</label>
-                  <button
-                    type="button"
-                    style={{
-                      background: 'linear-gradient(135deg, rgba(229, 189, 117, 0.25), rgba(200, 150, 80, 0.2))',
-                      border: '1px solid var(--admin-gold-primary)',
-                      borderRadius: '6px',
-                      color: 'var(--admin-gold-primary)',
-                      padding: '4px 10px',
-                      fontSize: '0.78rem',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                    }}
-                    onClick={handleInsertMusicNote}
-                    title="Insert an interactive music note between words or sentences"
-                  >
-                    <span>♫</span>
-                    <span>Insert Music Note</span>
-                  </button>
-                </div>
-                <textarea
-                  ref={storyTextareaRef}
-                  className={styles.formTextarea}
-                  style={{
-                    minHeight: '160px',
-                    fontFamily: `"${activeFont}", cursive, sans-serif`,
-                    fontSize: '1.05rem',
-                    lineHeight: '1.5',
-                  }}
-                  value={activeRight.storyParagraphs.join('\n\n')}
+                <label className={styles.formLabel}>Song from Audio Library</label>
+                <select
+                  className={styles.formSelect}
+                  value={modalTrackId}
                   onChange={(e) => {
-                    const text = e.target.value;
-                    const paras = text.split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
-                    updateRightPage((r) => ({
-                      ...r,
-                      storyParagraphs: paras.length > 0 ? paras : (text.trim() ? [text.trim()] : []),
-                    }));
+                    const trkId = e.target.value;
+                    setModalTrackId(trkId);
+                    const matched = availableTracks.find((t) => t.id === trkId);
+                    if (matched) setModalTitle(matched.name);
                   }}
-                  placeholder="Write your story freely across the page. Separate paragraphs with an empty line..."
-                />
+                >
+                  {availableTracks.map((trk) => (
+                    <option key={trk.id} value={trk.id}>
+                      {trk.name} ({trk.type?.replace('audio/', '') || 'song'})
+                    </option>
+                  ))}
+                </select>
               </div>
 
-              {/* Inline Music Markers Configuration Section */}
-              {(() => {
-                const text = activeRight.storyParagraphs.join('\n\n');
-                const matchedIds: string[] = [];
-                const regex = /\[\[music:([a-zA-Z0-9_\-]+)\]\]/g;
-                let m: RegExpExecArray | null;
-                while ((m = regex.exec(text)) !== null) {
-                  if (!matchedIds.includes(m[1])) matchedIds.push(m[1]);
-                }
-                const registeredIds = Object.keys(activeRight.musicMarkers || {});
-                const allMarkerIds = Array.from(new Set([...matchedIds, ...registeredIds]));
-
-                if (allMarkerIds.length === 0) return null;
-
-                return (
-                  <div
-                    style={{
-                      background: 'rgba(25, 18, 12, 0.65)',
-                      border: '1px solid rgba(229, 189, 117, 0.35)',
-                      borderRadius: '8px',
-                      padding: '12px 14px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '10px',
-                    }}
-                  >
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span
-                        style={{
-                          fontSize: '0.78rem',
-                          textTransform: 'uppercase',
-                          letterSpacing: '0.08em',
-                          color: 'var(--admin-gold-primary)',
-                          fontWeight: 700,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                        }}
-                      >
-                        <span>🎵</span>
-                        <span>Inline Music Notes on this Page ({allMarkerIds.length})</span>
-                      </span>
-                    </div>
-
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {allMarkerIds.map((mId) => {
-                        const marker = activeRight.musicMarkers?.[mId] || {
-                          id: mId,
-                          trackId: audioTracks[0]?.id || 'sample_our_evening',
-                          title: 'Our Evening ♡',
-                          loop: true,
-                        };
-                        const isSelected = editingMarkerId === mId;
-
-                        return (
-                          <div
-                            key={mId}
-                            style={{
-                              background: isSelected ? 'rgba(229, 189, 117, 0.12)' : 'rgba(0, 0, 0, 0.25)',
-                              border: `1px solid ${isSelected ? 'var(--admin-gold-primary)' : 'rgba(229, 189, 117, 0.2)'}`,
-                              borderRadius: '6px',
-                              padding: '8px 10px',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '6px',
-                            }}
-                          >
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                <span
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    width: '20px',
-                                    height: '20px',
-                                    borderRadius: '50%',
-                                    background: 'radial-gradient(circle, #f5ba58, #db8a2a)',
-                                    color: '#17120F',
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                  }}
-                                >
-                                  ♫
-                                </span>
-                                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--admin-text-main)' }}>
-                                  {marker.title || 'Untitled Song'}
-                                </span>
-                                <code style={{ fontSize: '0.68rem', color: 'var(--admin-gold-bright)', opacity: 0.85 }}>
-                                  [[music:{mId}]]
-                                </code>
-                              </div>
-
-                              <div style={{ display: 'flex', gap: '6px' }}>
-                                <button
-                                  type="button"
-                                  style={{
-                                    background: 'rgba(229, 189, 117, 0.2)',
-                                    border: '1px solid var(--admin-border)',
-                                    borderRadius: '4px',
-                                    color: 'var(--admin-gold-primary)',
-                                    padding: '2px 8px',
-                                    fontSize: '0.72rem',
-                                    cursor: 'pointer',
-                                  }}
-                                  onClick={() => audioPlayer.playMarker(marker)}
-                                  title="Test play audio"
-                                >
-                                  ▶ Test
-                                </button>
-                                <button
-                                  type="button"
-                                  style={{
-                                    background: 'none',
-                                    border: 'none',
-                                    color: 'var(--admin-danger)',
-                                    fontSize: '0.85rem',
-                                    cursor: 'pointer',
-                                    padding: '0 4px',
-                                  }}
-                                  onClick={() => handleDeleteMusicMarker(mId)}
-                                  title="Delete note"
-                                >
-                                  🗑
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Configuration Fields */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '2px' }}>
-                              <div>
-                                <label style={{ fontSize: '0.68rem', color: 'var(--admin-text-subtle)', display: 'block', marginBottom: '2px' }}>
-                                  Audio Track
-                                </label>
-                                <select
-                                  className={styles.formInput}
-                                  style={{ padding: '4px 6px', fontSize: '0.78rem' }}
-                                  value={marker.trackId}
-                                  onChange={(e) => {
-                                    const trkId = e.target.value;
-                                    const selectedTrk = audioTracks.find((t) => t.id === trkId);
-                                    handleUpdateMusicMarker(mId, {
-                                      trackId: trkId,
-                                      title: selectedTrk?.name || marker.title,
-                                    });
-                                  }}
-                                >
-                                  <option value="sample_our_evening">Our Evening ♡ (Default Theme)</option>
-                                  {audioTracks
-                                    .filter((t) => t.id !== 'sample_our_evening')
-                                    .map((trk) => (
-                                      <option key={trk.id} value={trk.id}>
-                                        {trk.name} ({trk.type?.replace('audio/', '') || 'audio'})
-                                      </option>
-                                    ))}
-                                </select>
-                              </div>
-
-                              <div>
-                                <label style={{ fontSize: '0.68rem', color: 'var(--admin-text-subtle)', display: 'block', marginBottom: '2px' }}>
-                                  Display Title
-                                </label>
-                                <input
-                                  type="text"
-                                  className={styles.formInput}
-                                  style={{ padding: '4px 6px', fontSize: '0.78rem' }}
-                                  value={marker.title || ''}
-                                  onChange={(e) => handleUpdateMusicMarker(mId, { title: e.target.value })}
-                                  placeholder="e.g. Our Evening ♡"
-                                />
-                              </div>
-                            </div>
-
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '2px' }}>
-                              <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--admin-text-subtle)', cursor: 'pointer' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={marker.loop !== false}
-                                  onChange={(e) => handleUpdateMusicMarker(mId, { loop: e.target.checked })}
-                                />
-                                <span>Loop Audio</span>
-                              </label>
-
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--admin-text-subtle)' }}>
-                                <span>Start:</span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={0.5}
-                                  style={{ width: '45px', padding: '2px 4px', fontSize: '0.72rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--admin-border)', borderRadius: '3px', color: 'var(--admin-text-main)' }}
-                                  value={marker.startTime || 0}
-                                  onChange={(e) => handleUpdateMusicMarker(mId, { startTime: Number(e.target.value) })}
-                                />
-                                <span>s</span>
-                              </div>
-
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.72rem', color: 'var(--admin-text-subtle)' }}>
-                                <span>End:</span>
-                                <input
-                                  type="number"
-                                  min={0}
-                                  step={0.5}
-                                  style={{ width: '45px', padding: '2px 4px', fontSize: '0.72rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--admin-border)', borderRadius: '3px', color: 'var(--admin-text-main)' }}
-                                  value={marker.endTime || ''}
-                                  onChange={(e) => handleUpdateMusicMarker(mId, { endTime: e.target.value ? Number(e.target.value) : undefined })}
-                                  placeholder="Full"
-                                />
-                                <span>s</span>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* Individual Paragraphs List (Add / Remove / Reorder) */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--admin-gold-primary)' }}>
-                    Paragraph Blocks ({activeRight.storyParagraphs.length})
-                  </span>
-                  <button
-                    type="button"
-                    style={{
-                      background: 'rgba(229, 189, 117, 0.15)',
-                      border: '1px solid var(--admin-border)',
-                      borderRadius: '4px',
-                      color: 'var(--admin-gold-primary)',
-                      padding: '2px 8px',
-                      fontSize: '0.72rem',
-                      cursor: 'pointer',
-                    }}
-                    onClick={() => {
-                      updateRightPage((r) => ({
-                        ...r,
-                        storyParagraphs: [...r.storyParagraphs, ''],
-                      }));
-                    }}
-                  >
-                    + Add Paragraph
-                  </button>
-                </div>
-                {activeRight.storyParagraphs.map((para, idx) => (
-                  <div key={idx} style={{ display: 'flex', gap: '6px', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: '0.72rem', color: 'var(--admin-text-subtle)', minWidth: '18px', paddingTop: '6px' }}>
-                      P{idx + 1}
-                    </span>
-                    <input
-                      type="text"
-                      className={styles.formInput}
-                      style={{ flex: 1, padding: '6px 10px', fontSize: '0.82rem' }}
-                      value={para}
-                      onChange={(e) => {
-                        const next = [...activeRight.storyParagraphs];
-                        next[idx] = e.target.value;
-                        updateRightPage((r) => ({ ...r, storyParagraphs: next }));
-                      }}
-                    />
-                    {activeRight.storyParagraphs.length > 1 && (
-                      <button
-                        type="button"
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--admin-danger)',
-                          cursor: 'pointer',
-                          padding: '6px',
-                          fontSize: '0.9rem',
-                        }}
-                        title="Remove paragraph"
-                        onClick={() => {
-                          const next = activeRight.storyParagraphs.filter((_, i) => i !== idx);
-                          updateRightPage((r) => ({ ...r, storyParagraphs: next }));
-                        }}
-                      >
-                        ✕
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-
-              {/* Visual Page Capacity Gauge & Overflow Warning */}
-              <div className={styles.capacityGauge}>
-                <div className={styles.capacityHeader}>
-                  <span className={styles.capacityLabel}>Page Fill Capacity</span>
-                  <span
-                    className={styles.capacityPct}
-                    style={{
-                      color: capacityPct > 100 ? 'var(--admin-danger)' : capacityPct > 80 ? 'var(--admin-gold-amber)' : 'var(--admin-success)',
-                    }}
-                  >
-                    {capacityPct}% Filled
-                  </span>
-                </div>
-                <div className={styles.capacityTrack}>
-                  <div
-                    className={styles.capacityFill}
-                    style={{
-                      width: `${Math.min(100, capacityPct)}%`,
-                      background:
-                        capacityPct > 100
-                          ? 'linear-gradient(90deg, #e08b1c, #e05244)'
-                          : capacityPct > 80
-                          ? 'linear-gradient(90deg, #e5bd75, #e08b1c)'
-                          : 'linear-gradient(90deg, #4ec874, #e5bd75)',
-                    }}
-                  />
-                </div>
-                <div className={styles.capacityStats}>
-                  <span>Words: {wordsCount}</span>
-                  <span>Paragraphs: {nonBlankParas.length}</span>
-                  <span>Est. Lines: {estTotalLines}</span>
-                  <span>Space: {totalTextHeightPx}px / {usableHeightPx}px</span>
-                </div>
-                {capacityPct <= 75 ? (
-                  <div className={`${styles.capacityBadge} ${styles.capacityBadgeOptimal}`}>
-                    <span>✓</span> Comfortable Page Fit — Beautiful breathing room & margins.
-                  </div>
-                ) : capacityPct <= 100 ? (
-                  <div className={`${styles.capacityBadge} ${styles.capacityBadgeNearFull}`}>
-                    <span>✦</span> Full Page Coverage — Fills page comfortably from top to bottom.
-                  </div>
-                ) : (
-                  <div className={`${styles.capacityBadge} ${styles.capacityBadgeOverflow}`}>
-                    <span>⚠️</span> Page Overflow Warning ({capacityPct}%): Text exceeds physical page boundaries and will be clipped at the bottom! Reduce font size, line spacing, or trim story length.
-                  </div>
-                )}
-              </div>
-
+              {/* Display Title */}
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Closing Signature</label>
+                <label className={styles.formLabel}>Display Title</label>
                 <input
                   type="text"
                   className={styles.formInput}
-                  value={activeRight.signature || ''}
-                  onChange={(e) => updateRightPage((r) => ({ ...r, signature: e.target.value }))}
-                  placeholder="e.g. Always yours, Elena ♡"
+                  value={modalTitle}
+                  onChange={(e) => setModalTitle(e.target.value)}
+                  placeholder="e.g. Remo — First Sight BGM"
                 />
               </div>
-            </>
-          ) : (
-            /* Left Page Photos & Notes Form */
-            <>
-              {activeLeft.photos.map((photo, pIdx) => (
-                <div
-                  key={photo.id}
-                  style={{
-                    background: 'rgba(28, 22, 16, 0.6)',
-                    border: '1px solid var(--admin-border)',
-                    borderRadius: '8px',
-                    padding: '14px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '10px',
-                  }}
-                >
-                  <span style={{ fontSize: '0.80rem', fontWeight: 700, color: 'var(--admin-gold-primary)' }}>
-                    Polaroid Photo {pIdx + 1}
-                  </span>
 
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Photo Title</label>
+              {/* Marker Color Swatches & Custom Picker */}
+              <div className={styles.formGroup}>
+                <label className={styles.formLabel}>Note Color (Default: Crimson Red)</label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                  {[
+                    { label: 'Crimson Red (Default)', color: '#D32F2F' },
+                    { label: 'Amber Gold', color: '#E5BD75' },
+                    { label: 'Sunset Rose', color: '#E05275' },
+                    { label: 'Royal Indigo', color: '#3F51B5' },
+                    { label: 'Forest Green', color: '#2E7D32' },
+                  ].map((swatch) => (
+                    <button
+                      key={swatch.color}
+                      type="button"
+                      title={swatch.label}
+                      style={{
+                        width: '28px',
+                        height: '28px',
+                        borderRadius: '50%',
+                        background: swatch.color,
+                        border:
+                          modalColor.toLowerCase() === swatch.color.toLowerCase()
+                            ? '3px solid #ffffff'
+                            : '1.5px solid rgba(255,255,255,0.3)',
+                        cursor: 'pointer',
+                        boxShadow: '0 2px 5px rgba(0,0,0,0.4)',
+                      }}
+                      onClick={() => setModalColor(swatch.color)}
+                    />
+                  ))}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <input
+                      type="color"
+                      value={modalColor}
+                      onChange={(e) => setModalColor(e.target.value)}
+                      style={{ width: '28px', height: '28px', border: 'none', background: 'none', cursor: 'pointer' }}
+                      title="Custom color picker"
+                    />
                     <input
                       type="text"
                       className={styles.formInput}
-                      value={photo.title}
-                      onChange={(e) =>
-                        updateLeftPage((l) => {
-                          const nextPhotos = [...l.photos];
-                          nextPhotos[pIdx] = { ...nextPhotos[pIdx], title: e.target.value };
-                          return { ...l, photos: nextPhotos };
-                        })
-                      }
+                      style={{ width: '85px', padding: '4px 8px', fontSize: '0.78rem', fontFamily: 'monospace' }}
+                      value={modalColor}
+                      onChange={(e) => setModalColor(e.target.value)}
                     />
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Date Caption</label>
-                    <input
-                      type="text"
-                      className={styles.formInput}
-                      value={photo.date || ''}
-                      onChange={(e) =>
-                        updateLeftPage((l) => {
-                          const nextPhotos = [...l.photos];
-                          nextPhotos[pIdx] = { ...nextPhotos[pIdx], date: e.target.value };
-                          return { ...l, photos: nextPhotos };
-                        })
-                      }
-                    />
-                  </div>
-
-                  <div className={styles.formGroup}>
-                    <label className={styles.formLabel}>Washi Tape Style</label>
-                    <select
-                      className={styles.formSelect}
-                      value={photo.tapeStyle}
-                      onChange={(e) =>
-                        updateLeftPage((l) => {
-                          const nextPhotos = [...l.photos];
-                          nextPhotos[pIdx] = {
-                            ...nextPhotos[pIdx],
-                            tapeStyle: e.target.value as any,
-                          };
-                          return { ...l, photos: nextPhotos };
-                        })
-                      }
-                    >
-                      <option value="washi-pink">Washi Pink Ribbon</option>
-                      <option value="washi-gold">Washi Gold Leaf</option>
-                      <option value="corner-tabs">Corner Photo Tabs</option>
-                    </select>
                   </div>
                 </div>
-              ))}
+              </div>
 
+              {/* Marker Size */}
               <div className={styles.formGroup}>
-                <label className={styles.formLabel}>Handwritten Notes (One per line)</label>
-                <textarea
-                  className={styles.formTextarea}
-                  value={activeLeft.handwrittenNotes.join('\n')}
-                  placeholder="Enter quotes or handwritten notes..."
-                  onChange={(e) => {
-                    const lines = e.target.value.split('\n');
-                    updateLeftPage((l) => ({ ...l, handwrittenNotes: lines }));
-                  }}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <label className={styles.formLabel}>Note Size</label>
+                  <span style={{ fontSize: '0.76rem', color: 'var(--admin-gold-bright)', fontFamily: 'monospace' }}>
+                    {modalSize}px
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={20}
+                  max={36}
+                  step={1}
+                  value={modalSize}
+                  onChange={(e) => setModalSize(Number(e.target.value))}
+                  style={{ accentColor: modalColor }}
                 />
               </div>
-            </>
-          )}
-        </div>
-      </div>
 
-      {/* Media Picker Modal */}
+              {/* Live Note Preview */}
+              <div
+                style={{
+                  background: 'rgba(0, 0, 0, 0.35)',
+                  border: '1px solid var(--admin-border)',
+                  borderRadius: '8px',
+                  padding: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      width: `${modalSize}px`,
+                      height: `${modalSize}px`,
+                      borderRadius: '50%',
+                      background: `radial-gradient(circle at 35% 35%, #ff8a80 0%, ${modalColor} 60%, #8b0000 100%)`,
+                      boxShadow: `0 2px 10px ${modalColor}88`,
+                      border: '1px solid rgba(255, 255, 255, 0.45)',
+                      color: '#ffffff',
+                      fontWeight: 700,
+                      fontSize: `${Math.round(modalSize * 0.58)}px`,
+                      position: 'relative',
+                    }}
+                  >
+                    ♫
+                    <span style={{ position: 'absolute', top: '-3px', right: '-3px', fontSize: '9px', color: '#fff9c4' }}>✧</span>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--admin-text-main)' }}>
+                      Preview: {modalTitle || 'Song Title'}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--admin-text-subtle)' }}>
+                      How it will appear between handwritten lines
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className={styles.toolbarBtn}
+                  style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                  onClick={() =>
+                    audioPlayer.playMarker({
+                      id: modalMarkerId,
+                      trackId: modalTrackId,
+                      title: modalTitle,
+                      loop: modalLoop,
+                      startTime: modalStart,
+                      endTime: modalEnd,
+                    })
+                  }
+                >
+                  ▶ Test Audio
+                </button>
+              </div>
+
+              {/* Playback Controls: Loop & Timing */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--admin-text-main)', cursor: 'pointer' }}>
+                  <input
+                    type="checkbox"
+                    checked={modalLoop}
+                    onChange={(e) => setModalLoop(e.target.checked)}
+                  />
+                  <span>Loop Audio continuously</span>
+                </label>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: 'var(--admin-text-subtle)' }}>
+                  <span>Start:</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    style={{ width: '50px', padding: '3px 6px', fontSize: '0.78rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--admin-border)', borderRadius: '4px', color: '#fff' }}
+                    value={modalStart}
+                    onChange={(e) => setModalStart(Number(e.target.value))}
+                  />
+                  <span>s</span>
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.78rem', color: 'var(--admin-text-subtle)' }}>
+                  <span>End:</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step={0.5}
+                    style={{ width: '50px', padding: '3px 6px', fontSize: '0.78rem', background: 'rgba(0,0,0,0.3)', border: '1px solid var(--admin-border)', borderRadius: '4px', color: '#fff' }}
+                    value={modalEnd || ''}
+                    onChange={(e) => setModalEnd(e.target.value ? Number(e.target.value) : undefined)}
+                    placeholder="Full"
+                  />
+                  <span>s</span>
+                </div>
+              </div>
+            </div>
+
+            <div className={styles.modalFooter} style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => setMusicModalOpen(false)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                onClick={handleSaveMusicModal}
+                style={{ background: 'linear-gradient(135deg, #e5bd75 0%, #db8a2a 100%)', color: '#2b1504', fontWeight: 700 }}
+              >
+                {musicModalMode === 'create' ? 'Insert at Cursor ♫' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          REORDER PARAGRAPHS MODAL
+          ========================================================================= */}
+      {reorderModalOpen && (
+        <div className={styles.modalBackdrop} onClick={() => setReorderModalOpen(false)}>
+          <div
+            className={styles.modalContent}
+            style={{ maxWidth: '600px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h3 className={styles.modalTitle}>Organize & Reorder Paragraphs ({activeRight.storyParagraphs.length})</h3>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => setReorderModalOpen(false)}
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className={styles.modalBody} style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '420px', overflowY: 'auto' }}>
+              {activeRight.storyParagraphs.map((para, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 12px',
+                    background: 'rgba(0,0,0,0.3)',
+                    border: '1px solid var(--admin-border)',
+                    borderRadius: '6px',
+                  }}
+                >
+                  <span style={{ fontWeight: 700, color: 'var(--admin-gold-primary)', minWidth: '32px', fontSize: '0.80rem' }}>
+                    P{idx + 1}
+                  </span>
+                  <div
+                    style={{
+                      flex: 1,
+                      fontSize: '0.84rem',
+                      color: 'var(--admin-text-main)',
+                      whiteSpace: 'nowrap',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                    }}
+                    title={para}
+                  >
+                    {para || <em style={{ color: 'var(--admin-text-subtle)' }}>(Empty paragraph)</em>}
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.toolbarBtn}
+                    style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                    disabled={idx === 0}
+                    onClick={() => handleMoveParagraph(idx, -1)}
+                    title="Move paragraph up"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.toolbarBtn}
+                    style={{ padding: '3px 8px', fontSize: '0.74rem' }}
+                    disabled={idx === activeRight.storyParagraphs.length - 1}
+                    onClick={() => handleMoveParagraph(idx, 1)}
+                    title="Move paragraph down"
+                  >
+                    ▼
+                  </button>
+                  {activeRight.storyParagraphs.length > 1 && (
+                    <button
+                      type="button"
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: 'var(--admin-danger)',
+                        cursor: 'pointer',
+                        padding: '4px 6px',
+                        fontSize: '0.86rem',
+                      }}
+                      onClick={() => handleDeleteParagraphFromList(idx)}
+                      title="Delete paragraph"
+                    >
+                      🗑
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className={styles.modalFooter} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <button
+                type="button"
+                className={styles.toolbarBtn}
+                onClick={handleMergeParagraphs}
+                title="Merge all paragraphs into a single paragraph"
+              >
+                Merge All into One
+              </button>
+              <button
+                type="button"
+                className={styles.btnPrimary}
+                onClick={() => setReorderModalOpen(false)}
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =========================================================================
+          MEDIA PICKER MODAL (FOR LEFT PAGE STICKERS & MEMORIES)
+          ========================================================================= */}
       {showMediaPicker && (
         <div className={styles.modalBackdrop} onClick={() => setShowMediaPicker(false)}>
           <div className={styles.modalContent} onClick={(e) => e.stopPropagation()}>
@@ -1372,4 +2040,3 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
     </div>
   );
 };
-

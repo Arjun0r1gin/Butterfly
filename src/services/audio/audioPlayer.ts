@@ -160,20 +160,32 @@ class ScrapbookAudioPlayer {
 
     // Fallback: Check if trackId is a direct asset URL or canonical sample
     if (!url) {
-      if (marker.trackId.startsWith('/') || marker.trackId.startsWith('http')) {
+      if (marker.trackId && (marker.trackId.startsWith('/') || marker.trackId.startsWith('http'))) {
         url = marker.trackId;
       } else if (marker.trackId === 'sample_our_evening' || marker.trackId === 'm_whispering_garden') {
         url = assetUrl('/storybook/assets/our_evening_melody.mp3');
+      } else if (marker.trackId) {
+        url = await getAudioUrl(marker.trackId);
       }
     }
 
+    // Ultimate fallback if trackId was empty or unresolved
     if (!url) {
+      url =
+        (await getAudioUrl('track_remo_first_sight')) ||
+        assetUrl('/storybook/assets/our_evening_melody.mp3');
+    }
+
+    const resolvedUrl = assetUrl(url);
+    if (!resolvedUrl) {
       console.warn(`[AudioPlayer] Could not resolve audio URL for track ${marker.trackId}`);
       return;
     }
 
-    this.audio.src = assetUrl(url);
-    this.audio.loop = !!marker.loop;
+    this.audio.src = resolvedUrl;
+    this.audio.loop = marker.loop !== false;
+    this.audio.volume = 1.0;
+    this.audio.muted = false;
 
     const start = marker.startTime || 0;
     this.audio.currentTime = start;
@@ -185,7 +197,7 @@ class ScrapbookAudioPlayer {
       isPlaying: true,
       currentTime: start,
       duration: track?.duration || 0,
-      loop: !!marker.loop,
+      loop: marker.loop !== false,
       anchorPosition: screenPos || this.state.anchorPosition,
     });
 
@@ -199,6 +211,8 @@ class ScrapbookAudioPlayer {
 
   public async resume(): Promise<void> {
     if (this.audio && this.audio.src) {
+      this.audio.volume = 1.0;
+      this.audio.muted = false;
       try {
         await this.audio.play();
         this.updateState({ isPlaying: true });

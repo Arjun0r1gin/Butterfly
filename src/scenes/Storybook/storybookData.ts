@@ -142,32 +142,7 @@ export const STORYBOOK_SPREADS: StorySpread[] = [
           paragraphSpacing: 18,
           textAlign: 'left',
         },
-        stickers: [
-          {
-            id: 's1_r_pink_sprig',
-            type: 'flower',
-            label: 'Pink Wildflower Sprig',
-            customUrl: '/storybook/assets/flower_pink_sprig.png',
-            x: 88,
-            y: 84,
-            width: 85,
-            height: 115,
-            rotationDeg: 5,
-            zIndex: 2,
-          },
-          {
-            id: 's1_r_washi_pink',
-            type: 'image',
-            label: 'Floral Washi Strip',
-            customUrl: '/storybook/assets/washi_pink_floral.png',
-            x: 74,
-            y: 96,
-            width: 160,
-            height: 35,
-            rotationDeg: -2,
-            zIndex: 3,
-          },
-        ],
+        stickers: [],
         musicMarkers: {
           m_remo_first_sight: {
             id: 'm_remo_first_sight',
@@ -311,20 +286,7 @@ export const STORYBOOK_SPREADS: StorySpread[] = [
           paragraphSpacing: 18,
           textAlign: 'left',
         },
-        stickers: [
-          {
-            id: 's2_r_rose_blossom',
-            type: 'flower',
-            label: 'Pressed Blossom Accent',
-            customUrl: '/storybook/assets/flower_purple.png',
-            x: 88,
-            y: 88,
-            width: 80,
-            height: 100,
-            rotationDeg: 6,
-            zIndex: 2,
-          },
-        ],
+        stickers: [],
         musicMarkers: {
           m_othadayai_padhayile: {
             id: 'm_othadayai_padhayile',

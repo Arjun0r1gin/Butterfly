@@ -193,14 +193,6 @@ export const RightPageContent = memo(function RightPageContent({
           <div className={styles.inkFlourishAccent} />
         )}
       </div>
-
-      {/* Pressed Pink Wildflower Sprig in Bottom Right Corner */}
-      <img
-        src={assetUrl('/storybook/assets/flower_pink_sprig.png')}
-        alt=""
-        className={styles.bottomRightFlower}
-        aria-hidden="true"
-      />
     </div>
   );
 });

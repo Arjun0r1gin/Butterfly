@@ -19,9 +19,23 @@ export function assetUrl(path: string | undefined | null): string {
   }
 
   const base = import.meta.env.BASE_URL || '/';
-  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   const cleanBase = base.endsWith('/') ? base : `${base}/`;
+  const basePrefix = cleanBase.startsWith('/') ? cleanBase : `/${cleanBase}`;
 
+  // If path already starts with the base URL (e.g. /Butterfly/ or Butterfly/), do NOT prepend it again
+  if (path.startsWith(basePrefix)) {
+    return path;
+  }
+
+  const baseWithoutSlash = basePrefix.replace(/^\/+|\/+$/g, '');
+  if (baseWithoutSlash && path.startsWith(baseWithoutSlash + '/')) {
+    return `/${path}`;
+  }
+  if (baseWithoutSlash && path.startsWith('/' + baseWithoutSlash + '/')) {
+    return path;
+  }
+
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   return `${cleanBase}${cleanPath}`;
 }
 

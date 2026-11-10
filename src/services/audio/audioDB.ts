@@ -94,28 +94,28 @@ export const INITIAL_CONFESSION_TRACKS: AudioTrack[] = [
   {
     id: 'track_remo_first_sight',
     name: 'Remo — First Sight BGM',
-    fileName: 'remo_first_sight.mp3',
+    fileName: 'track_remo_first_sight_Indiraiyo_Ival__1st.mp3',
     type: 'audio/mpeg',
-    size: 0,
-    duration: 0,
+    size: 831841,
+    duration: 52,
     createdAt: 1731100000000,
   },
   {
     id: 'track_othadayai_padhayile',
     name: 'Othadayai Padhayile',
-    fileName: 'othadayai_padhayile.mp3',
+    fileName: 'track_othadayai_padhayile_otd_pdy_2.mp3',
     type: 'audio/mpeg',
-    size: 0,
-    duration: 0,
+    size: 801495,
+    duration: 50.1,
     createdAt: 1731100001000,
   },
   {
     id: 'track_thalaivar_bgm',
     name: 'Rajinikanth / Thalaivar BGM',
-    fileName: 'thalaivar_bgm.mp3',
+    fileName: 'track_thalaivar_bgm_Superstar_Rajinikanth_Classic_Title_Card_in_6_Languages_256k_.mp3',
     type: 'audio/mpeg',
-    size: 0,
-    duration: 0,
+    size: 746540,
+    duration: 46.6,
     createdAt: 1731100002000,
   },
 ];
@@ -385,6 +385,15 @@ export async function getAudioUrl(id: string): Promise<string | null> {
     }
   } catch {
     // fallback
+  }
+
+  // Check INITIAL_CONFESSION_TRACKS fallback
+  const initialMatch = INITIAL_CONFESSION_TRACKS.find((t) => t.id === id);
+  if (initialMatch && initialMatch.fileName) {
+    const rawPath = initialMatch.fileName.startsWith('/')
+      ? initialMatch.fileName
+      : `/audio/${initialMatch.fileName}`;
+    return assetUrl(rawPath);
   }
 
   if (urlCache.has(id)) {

@@ -157,10 +157,42 @@ function sanitizeContent(raw: Partial<ButterflyContent>): ButterflyContent {
   const finalQuestion = isOldQuestion
     ? DEFAULT_BUTTERFLY_CONTENT.finalQuestion
     : { ...raw.finalQuestion!, stickers: [] };
+
+  const rawSpreads =
+    isV3 && Array.isArray(raw.spreads) && raw.spreads.length > 0
+      ? raw.spreads
+      : DEFAULT_BUTTERFLY_CONTENT.spreads;
+
+  // Filter out any flower stickers from the right-hand narrative pages
+  const cleanSpreads = rawSpreads.map((sp) => ({
+    ...sp,
+    rightPage: {
+      ...sp.rightPage,
+      stickers: (sp.rightPage.stickers || []).filter((st) => {
+        const isFlower =
+          st.type === 'flower' ||
+          st.type === 'botanical' ||
+          (st.customUrl &&
+            (st.customUrl.includes('flower') ||
+              st.customUrl.includes('sprig') ||
+              st.customUrl.includes('blossom') ||
+              st.customUrl.includes('stamp_pink') ||
+              st.customUrl.includes('stamp_vintage_rose') ||
+              st.customUrl.includes('washi_pink_floral'))) ||
+          (st.label &&
+            (st.label.toLowerCase().includes('flower') ||
+              st.label.toLowerCase().includes('sprig') ||
+              st.label.toLowerCase().includes('blossom') ||
+              st.label.toLowerCase().includes('rose')));
+        return !isFlower;
+      }),
+    },
+  }));
+
   return {
-    version: 5,
+    version: 6,
     lastSaved: raw.lastSaved || Date.now(),
-    spreads: isV3 && Array.isArray(raw.spreads) && raw.spreads.length > 0 ? raw.spreads : DEFAULT_BUTTERFLY_CONTENT.spreads,
+    spreads: cleanSpreads,
     finalQuestion,
     mediaAssets: Array.isArray(raw.mediaAssets) ? raw.mediaAssets : [],
     audioTracks: Array.isArray(raw.audioTracks) ? raw.audioTracks : DEFAULT_BUTTERFLY_CONTENT.audioTracks,

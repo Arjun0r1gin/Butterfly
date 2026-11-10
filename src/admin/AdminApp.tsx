@@ -4,7 +4,7 @@
  * media library, sticker manipulation, export/import, and zero backend dependencies.
  */
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useButterflyContent } from '../services/content/useButterflyContent';
 import { exportContentPackage, importContentPackage } from '../services/content/contentStorage';
 import {
@@ -29,6 +29,16 @@ export const AdminApp: React.FC = () => {
   const [isPublishing, setIsPublishing] = useState(false);
   const [publishStatus, setPublishStatus] = useState<'idle' | 'saving' | 'published' | 'failed'>('idle');
   const [publishResultModal, setPublishResultModal] = useState<PublishResult | null>(null);
+
+  useEffect(() => {
+    // When inside Studio Admin, ensure body allows standard user text selection and interaction
+    const origBodyUserSelect = document.body.style.userSelect;
+    document.body.style.userSelect = 'text';
+
+    return () => {
+      document.body.style.userSelect = origBodyUserSelect;
+    };
+  }, []);
   const [lastPublishedTime, setLastPublishedTime] = useState<number | null>(() => {
     if (typeof window === 'undefined') return null;
     const raw = localStorage.getItem('butterfly_last_published_time');
