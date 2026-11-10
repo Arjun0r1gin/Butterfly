@@ -167,10 +167,10 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
   // Typography controls
   const typo = activeRight.typography || {};
   const activeFont = typo.fontFamily || 'Caveat';
-  const activeFontSize = typo.fontSize || 34;
+  const activeFontSize = typo.fontSize || 48;
   const activeColor = typo.color || '#17120F';
-  const activeLineHeight = typo.lineHeight || 1.55;
-  const activeParaSpacing = typo.paragraphSpacing !== undefined ? typo.paragraphSpacing : 28;
+  const activeLineHeight = typo.lineHeight || 1.48;
+  const activeParaSpacing = typo.paragraphSpacing !== undefined ? typo.paragraphSpacing : 18;
   const activeAlign = typo.textAlign || 'left';
 
   const updateTypography = (updater: (prev: PageTypography) => PageTypography) => {
@@ -178,10 +178,10 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
       ...r,
       typography: updater(r.typography || {
         fontFamily: 'Caveat',
-        fontSize: 34,
+        fontSize: 48,
         color: '#17120F',
-        lineHeight: 1.55,
-        paragraphSpacing: 28,
+        lineHeight: 1.48,
+        paragraphSpacing: 18,
         textAlign: 'left',
       }),
     }));
@@ -190,10 +190,10 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
   const handleResetTypography = () => {
     updateTypography(() => ({
       fontFamily: 'Caveat',
-      fontSize: 34,
+      fontSize: 48,
       color: '#17120F',
-      lineHeight: 1.55,
-      paragraphSpacing: 28,
+      lineHeight: 1.48,
+      paragraphSpacing: 18,
       textAlign: 'left',
     }));
   };
@@ -610,25 +610,50 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
 
   const handleSelectMediaForSticker = (asset: MediaAsset, url: string) => {
     setShowMediaPicker(false);
-    const newSticker: StickerItem = {
-      id: `st_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
-      type: asset.isGif ? 'gif' : 'image',
-      label: asset.name,
-      mediaId: asset.id,
-      customUrl: url,
-      x: 50,
-      y: 50,
-      width: 100,
-      height: 100,
-      rotationDeg: 0,
-      zIndex: 10,
+
+    const addStickerWithDimensions = (w: number, h: number) => {
+      const newSticker: StickerItem = {
+        id: `st_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
+        type: asset.isGif ? 'gif' : 'image',
+        label: asset.name,
+        mediaId: asset.id,
+        customUrl: url,
+        x: 50,
+        y: 50,
+        width: w,
+        height: h,
+        rotationDeg: 0,
+        zIndex: 10,
+      };
+
+      if (activeSide === 'left') {
+        updateLeftPage((l) => ({ ...l, stickers: [...l.stickers, newSticker] }));
+      } else {
+        updateRightPage((r) => ({ ...r, stickers: [...r.stickers, newSticker] }));
+      }
     };
 
-    if (activeSide === 'left') {
-      updateLeftPage((l) => ({ ...l, stickers: [...l.stickers, newSticker] }));
-    } else {
-      updateRightPage((r) => ({ ...r, stickers: [...r.stickers, newSticker] }));
-    }
+    // Pre-calculate natural aspect ratio of image so it doesn't get squashed
+    const testImg = new Image();
+    testImg.onload = () => {
+      const natW = testImg.naturalWidth || 1;
+      const natH = testImg.naturalHeight || 1;
+      const aspect = natW / natH;
+      let w = 180;
+      let h = 180;
+      if (aspect >= 1) {
+        w = 200;
+        h = Math.max(40, Math.round(w / aspect));
+      } else {
+        h = 220;
+        w = Math.max(40, Math.round(h * aspect));
+      }
+      addStickerWithDimensions(w, h);
+    };
+    testImg.onerror = () => {
+      addStickerWithDimensions(180, 180);
+    };
+    testImg.src = url;
   };
 
   // Extract all active music markers referenced on the current right page
@@ -1452,14 +1477,31 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
               <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--admin-gold-primary)' }}>
                 Left Page Scrapbook Collage (Page {activeSpreadIdx * 2 + 1})
               </span>
-              <button
-                type="button"
-                className={styles.btnPrimary}
-                style={{ padding: '6px 14px', fontSize: '0.78rem' }}
-                onClick={() => setShowMediaPicker(true)}
-              >
-                + Add Sticker / Animated GIF
-              </button>
+              <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                {(activeLeft.stickers.length > 0 || (activeLeft.photos && activeLeft.photos.length > 0)) && (
+                  <button
+                    type="button"
+                    className={styles.btnSecondary}
+                    style={{ padding: '6px 12px', fontSize: '0.78rem' }}
+                    onClick={() => {
+                      if (window.confirm('Clear all stickers and images from this left page?')) {
+                        updateLeftPage((l) => ({ ...l, stickers: [], photos: [], handwrittenNotes: [] }));
+                      }
+                    }}
+                    title="Remove all items and keep page blank"
+                  >
+                    Clear Page
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className={styles.btnPrimary}
+                  style={{ padding: '6px 14px', fontSize: '0.78rem' }}
+                  onClick={() => setShowMediaPicker(true)}
+                >
+                  + Add Image / Sticker / GIF
+                </button>
+              </div>
             </div>
 
             <div className={styles.canvasBoardWrapper}>
@@ -1468,87 +1510,133 @@ export const ScrapbookEditor: React.FC<ScrapbookEditorProps> = ({
                 onUpdateStickers={handleUpdateStickers}
                 backgroundSrc="/storybook/studio_page_blank_left.jpg"
               >
-                <div style={{ padding: '24px 16px', pointerEvents: 'none', userSelect: 'none', height: '100%', position: 'relative' }}>
+                {/* Empty State Watermark for Blank Left Page */}
+                {activeLeft.stickers.length === 0 && (!activeLeft.photos || activeLeft.photos.length === 0) && (
                   <div
                     style={{
+                      position: 'absolute',
+                      inset: 0,
                       display: 'flex',
-                      flexWrap: 'wrap',
-                      gap: '14px',
-                      justifyContent: 'center',
+                      flexDirection: 'column',
                       alignItems: 'center',
+                      justifyContent: 'center',
+                      pointerEvents: 'none',
+                      userSelect: 'none',
+                      padding: '24px',
+                      textAlign: 'center',
                     }}
                   >
-                    {activeLeft.photos.map((p) => (
-                      <div
-                        key={p.id}
-                        style={{
-                          background: '#fffefb',
-                          border: '1px solid #ede4d3',
-                          padding: '6px 6px 14px',
-                          boxShadow: '0 8px 18px rgba(25,14,6,0.22)',
-                          width: activeLeft.photos.length === 3 ? '120px' : '145px',
-                          transform: `rotate(${p.rotationDeg}deg)`,
-                          borderRadius: '2px',
-                          position: 'relative',
-                        }}
-                      >
-                        <div
-                          style={{
-                            position: 'absolute',
-                            top: '-8px',
-                            left: '50%',
-                            transform: 'translateX(-50%)',
-                            width: '55px',
-                            height: '14px',
-                            background:
-                              p.tapeStyle === 'washi-gold'
-                                ? 'rgba(235, 215, 185, 0.9)'
-                                : 'rgba(245, 175, 190, 0.9)',
-                            boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
-                          }}
-                        />
-
-                        <div
-                          style={{
-                            width: '100%',
-                            height: activeLeft.photos.length === 3 ? '85px' : '105px',
-                            background: p.bgGradient || '#fdfbf7',
-                            overflow: 'hidden',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          {p.customUrl ? (
-                            <img
-                              src={p.customUrl}
-                              alt={p.title}
-                              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                            />
-                          ) : (
-                            <span style={{ fontSize: '24px' }}>{p.doodle || '📷'}</span>
-                          )}
-                        </div>
-
-                        <div
-                          style={{
-                            fontFamily: "'Caveat', 'Patrick Hand', cursive",
-                            fontSize: '14px',
-                            color: '#161311',
-                            fontWeight: 600,
-                            marginTop: '6px',
-                            textAlign: 'left',
-                            whiteSpace: 'nowrap',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                          }}
-                        >
-                          {p.title}
-                        </div>
-                      </div>
-                    ))}
+                    <span style={{ fontSize: '32px', opacity: 0.35, marginBottom: '6px' }}>✨</span>
+                    <p
+                      style={{
+                        fontFamily: "'Caveat', cursive",
+                        fontSize: '22px',
+                        color: '#6e5847',
+                        margin: 0,
+                        opacity: 0.75,
+                      }}
+                    >
+                      Blank Scrapbook Page
+                    </p>
+                    <p
+                      style={{
+                        fontSize: '12px',
+                        color: '#8c735d',
+                        marginTop: '6px',
+                        maxWidth: '240px',
+                        opacity: 0.8,
+                        lineHeight: 1.4,
+                      }}
+                    >
+                      Click &ldquo;+ Add Image / Sticker / GIF&rdquo; to place your own memories here.
+                    </p>
                   </div>
-                </div>
+                )}
+
+                {/* Legacy polaroid support if present */}
+                {activeLeft.photos && activeLeft.photos.length > 0 && (
+                  <div style={{ padding: '24px 16px', pointerEvents: 'none', userSelect: 'none', height: '100%', position: 'relative' }}>
+                    <div
+                      style={{
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: '14px',
+                        justifyContent: 'center',
+                        alignItems: 'center',
+                      }}
+                    >
+                      {activeLeft.photos.map((p) => (
+                        <div
+                          key={p.id}
+                          style={{
+                            background: '#fffefb',
+                            border: '1px solid #ede4d3',
+                            padding: '6px 6px 14px',
+                            boxShadow: '0 8px 18px rgba(25,14,6,0.22)',
+                            width: activeLeft.photos.length === 3 ? '120px' : '145px',
+                            transform: `rotate(${p.rotationDeg}deg)`,
+                            borderRadius: '2px',
+                            position: 'relative',
+                          }}
+                        >
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: '-8px',
+                              left: '50%',
+                              transform: 'translateX(-50%)',
+                              width: '55px',
+                              height: '14px',
+                              background:
+                                p.tapeStyle === 'washi-gold'
+                                  ? 'rgba(235, 215, 185, 0.9)'
+                                  : 'rgba(245, 175, 190, 0.9)',
+                              boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+                            }}
+                          />
+
+                          <div
+                            style={{
+                              width: '100%',
+                              height: activeLeft.photos.length === 3 ? '85px' : '105px',
+                              background: p.bgGradient || '#fdfbf7',
+                              overflow: 'hidden',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            {p.customUrl ? (
+                              <img
+                                src={p.customUrl}
+                                alt={p.title}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            ) : (
+                              <span style={{ fontSize: '24px' }}>{p.doodle || '📷'}</span>
+                            )}
+                          </div>
+
+                          <div
+                            style={{
+                              fontFamily: "'Caveat', 'Patrick Hand', cursive",
+                              fontSize: '14px',
+                              color: '#161311',
+                              fontWeight: 600,
+                              marginTop: '6px',
+                              textAlign: 'left',
+                              whiteSpace: 'nowrap',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {p.title}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </StickerCanvas>
               <NowPlayingPill />
             </div>

@@ -102,6 +102,7 @@ export interface MediaAsset {
   isGif: boolean;
   createdAt: number;
   dataUrl?: string;    // Base64 data URL for export/preview
+  customUrl?: string;  // Static bundled production media path
 }
 
 export interface AudioTrack {

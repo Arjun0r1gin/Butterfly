@@ -21,11 +21,15 @@ async function ensureHandwritingFonts(customFont?: string): Promise<void> {
   if (typeof document !== 'undefined' && document.fonts) {
     try {
       if (customFont) {
+        await document.fonts.load(`600 48px "${customFont}"`);
+        await document.fonts.load(`bold 48px "${customFont}"`);
         await document.fonts.load(`600 44px "${customFont}"`);
         await document.fonts.load(`bold 44px "${customFont}"`);
         await document.fonts.load(`600 36px "${customFont}"`);
         await document.fonts.load(`34px "${customFont}"`);
       }
+      await document.fonts.load('600 48px "Caveat"');
+      await document.fonts.load('bold 48px "Caveat"');
       await document.fonts.load('600 44px "Caveat"');
       await document.fonts.load('bold 44px "Caveat"');
       await document.fonts.load('600 38px "Caveat"');
@@ -333,12 +337,12 @@ export async function renderRightPageCanvas(
   }
 
   ctx.save();
-  // Expanded text column: 78px clears spiral binder rings, 44px outer margin
-  const marginXLeft = 78;
-  const marginXRight = 44;
-  const contentW = PAGE_CANVAS_W - marginXLeft - marginXRight; // 902px wide
+  // Expanded text column: 68px clears spiral binder rings, 36px outer margin
+  const marginXLeft = 68;
+  const marginXRight = 36;
+  const contentW = PAGE_CANVAS_W - marginXLeft - marginXRight; // 920px wide
 
-  let curY = 74;
+  let curY = 54;
 
   // 2. Date in Top Right with Pen Underline
   if (page.dateOrLocation) {
@@ -354,8 +358,8 @@ export async function renderRightPageCanvas(
     ctx.strokeStyle = textColor;
     ctx.lineWidth = 2.0;
     ctx.beginPath();
-    ctx.moveTo(dateX - dateMetrics.width - 8, curY + 9);
-    ctx.quadraticCurveTo(dateX - dateMetrics.width / 2, curY + 11, dateX + 6, curY + 9);
+    ctx.moveTo(dateX - dateMetrics.width - 8, curY + 8);
+    ctx.quadraticCurveTo(dateX - dateMetrics.width / 2, curY + 10, dateX + 6, curY + 8);
     ctx.stroke();
     ctx.restore();
   }
@@ -378,22 +382,22 @@ export async function renderRightPageCanvas(
     ctx.textAlign = 'left';
     ctx.fillText(chapText, marginXLeft, curY);
     ctx.restore();
-    curY += 44;
+    curY += 36;
   } else {
-    curY += 32;
+    curY += 28;
   }
 
   // 4. Chapter Title with Matching Blush Watercolor Wash Streak
   if (page.chapterTitle) {
     ctx.save();
     const titleText = page.chapterTitle;
-    ctx.font = `bold 44px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
+    ctx.font = `bold 42px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
     const titleMetrics = ctx.measureText(titleText);
 
     // Soft blush watercolor highlighter wash
     ctx.fillStyle = 'rgba(235, 160, 175, 0.45)';
     ctx.beginPath();
-    ctx.roundRect(marginXLeft - 10, curY - 32, titleMetrics.width + 26, 38, 8);
+    ctx.roundRect(marginXLeft - 10, curY - 30, titleMetrics.width + 26, 36, 8);
     ctx.fill();
 
     // Deep black ink title
@@ -401,25 +405,31 @@ export async function renderRightPageCanvas(
     ctx.textAlign = 'left';
     ctx.fillText(titleText, marginXLeft, curY);
     ctx.restore();
-    curY += 52;
+    curY += 46;
   }
 
   // 5. Genuine Long-Form Handwritten Story Body with Inline Music Badges
   const storyParagraphs = page.storyParagraphs || [];
-  const maxUsableY = PAGE_CANVAS_H - 45; // 1037px
+  const maxUsableY = PAGE_CANVAS_H - 24; // 1058px (maximize usable page height)
   const availableHeight = maxUsableY - curY;
 
-  // Exact Layout Solver: Dynamically find the largest readable font size (25–35% increase)
-  // that fits the paragraphs completely without overflowing, clipping, or overlapping
-  const maxFontSize = 38;
-  const minFontSize = 26;
-  let optimalFont = minFontSize;
-  let optimalLineHeight = Math.round(minFontSize * 1.34);
-  let optimalParaSpacing = 11;
+  // Respect user-configured typography from Studio Admin
+  const requestedFontSize = typo.fontSize || 48;
+  const requestedLineHeight = typo.lineHeight || 1.34;
+  const requestedParaSpacing = typo.paragraphSpacing !== undefined ? typo.paragraphSpacing : 14;
 
-  for (let testFont = maxFontSize; testFont >= minFontSize; testFont -= 1) {
-    const testLineHeight = Math.round(testFont * (typo.lineHeight || 1.34));
-    const testParaSpacing = storyParagraphs.length > 8 ? 10 : (storyParagraphs.length > 5 ? 13 : 16);
+  let optimalFont = requestedFontSize;
+  let optimalLineHeight = Math.round(requestedFontSize * (requestedLineHeight <= 1.35 ? requestedLineHeight : 1.24));
+  let optimalParaSpacing = requestedParaSpacing;
+
+  for (let testFont = requestedFontSize; testFont >= 24; testFont -= 1) {
+    const isTarget = testFont === requestedFontSize;
+    const lhRatio = isTarget && requestedLineHeight <= 1.30 ? requestedLineHeight : (testFont >= 40 ? 1.22 : 1.26);
+    const testLineHeight = Math.round(testFont * lhRatio);
+    const testParaSpacing = storyParagraphs.length > 8
+      ? Math.min(requestedParaSpacing, 6)
+      : (storyParagraphs.length > 5 ? Math.min(requestedParaSpacing, 8) : requestedParaSpacing);
+
     ctx.font = `600 ${testFont}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
 
     let totalH = 0;
@@ -442,7 +452,7 @@ export async function renderRightPageCanvas(
     totalH -= testParaSpacing;
 
     if (page.signature) {
-      totalH += Math.round(testFont * 1.1) + 8;
+      totalH += Math.round(testFont * 1.05) + 6;
     }
 
     if (totalH <= availableHeight) {
@@ -695,8 +705,11 @@ async function renderStickersOnCanvas(
     ctx.translate(sx, sy);
     ctx.rotate(((st.rotationDeg || 0) * Math.PI) / 180);
 
-    const sw = st.width || 80;
-    const sh = st.height || 80;
+    // Scale proportionally from editor canvas (440px wide) to 3D texture canvas (1024px wide)
+    // so sticker/image size on the physical book matches the admin panel WYSIWYG 1:1
+    const editorToCanvasScale = PAGE_CANVAS_W / 440;
+    const sw = (st.width || 80) * editorToCanvasScale;
+    const sh = (st.height || 80) * editorToCanvasScale;
 
     // Check if it has a custom URL or media ID
     const url = st.customUrl || (st.mediaId ? await getMediaUrl(st.mediaId) : null);

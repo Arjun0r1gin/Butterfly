@@ -1,7 +1,7 @@
 /**
  * BUTTERFLY — Interactive StickerCanvas Component
- * Interactive visual canvas supporting drag, resize, rotate, z-index layering,
- * and animated GIF rendering for scrapbook pages and the final proposal screen.
+ * Interactive visual canvas supporting drag, proportional resize, rotate, z-index layering,
+ * and animated GIF/image rendering with dedicated sizing controls.
  */
 
 import React, { useRef, useState, useEffect } from 'react';
@@ -124,7 +124,7 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   };
 
-  // 2. Resize Handle
+  // 2. Proportional Resize Handle
   const handlePointerDownResize = (e: React.PointerEvent, st: StickerItem) => {
     e.stopPropagation();
     dragRef.current = {
@@ -193,9 +193,10 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
     } else if (isResizing) {
       const dx = e.clientX - startX;
       const dy = e.clientY - startY;
-      const maxDelta = Math.max(dx, dy);
-      const newW = Math.max(30, Math.min(320, Math.round(origW + maxDelta)));
-      const newH = Math.max(30, Math.min(320, Math.round(origH + maxDelta)));
+      const aspect = origW > 0 && origH > 0 ? origW / origH : 1;
+      const delta = (dx + dy) / 2;
+      const newW = Math.max(30, Math.min(430, Math.round(origW + delta)));
+      const newH = Math.max(30, Math.min(480, Math.round(newW / aspect)));
 
       onUpdateStickers(
         stickers.map((s) => (s.id === id ? { ...s, width: newW, height: newH } : s))
@@ -219,14 +220,14 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
   };
 
   // Sticker actions
-  const handleDeleteSticker = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleDeleteSticker = (id: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     onUpdateStickers(stickers.filter((s) => s.id !== id));
     if (selectedId === id) setSelectedId(null);
   };
 
-  const handleLayerSticker = (id: string, dir: 'up' | 'down', e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleLayerSticker = (id: string, dir: 'up' | 'down', e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     const st = stickers.find((s) => s.id === id);
     if (!st) return;
     const currentZ = st.zIndex || 1;
@@ -234,149 +235,328 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
     onUpdateStickers(stickers.map((s) => (s.id === id ? { ...s, zIndex: newZ } : s)));
   };
 
-  return (
-    <div
-      ref={containerRef}
-      className={`${styles.interactivePage} ${className}`.trim()}
-      style={{ width: `${width}px`, height: `${height}px` }}
-      onClick={handleBoardClick}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onPointerLeave={handlePointerUp}
-    >
-      {/* Background Parchment */}
-      {backgroundSrc && (
-        <img
-          src={backgroundSrc}
-          alt=""
-          className={styles.interactivePageBg}
-          draggable={false}
-        />
-      )}
+  // Direct Sizing Controls
+  const selectedSticker = stickers.find((s) => s.id === selectedId);
 
-      {/* Embedded Page Text / Memories content */}
-      {children}
+  const handleSetWidth = (targetW: number) => {
+    if (!selectedId) return;
+    const st = stickers.find((s) => s.id === selectedId);
+    if (!st) return;
 
-      {/* Stickers Layer */}
-      {stickers.map((st) => {
-        const isSelected = st.id === selectedId;
-        const sw = st.width || 80;
-        const sh = st.height || 80;
-        const url = st.customUrl || (st.mediaId ? mediaUrls[st.mediaId] : null);
+    const curW = st.width || 80;
+    const curH = st.height || 80;
+    const aspect = curW > 0 && curH > 0 ? curW / curH : 1;
 
-        return (
-          <div
-            key={st.id}
-            className={`${styles.stickerElement} ${
-              isSelected ? styles.stickerElementSelected : ''
-            }`}
-            style={{
-              left: `${st.x}%`,
-              top: `${st.y}%`,
-              width: `${sw}px`,
-              height: `${sh}px`,
-              transform: `translate(-50%, -50%) rotate(${st.rotationDeg || 0}deg)`,
-              zIndex: st.zIndex || 1,
-            }}
-            onPointerDown={(e) => handlePointerDownSticker(e, st)}
-          >
-            {/* Control Bar for Selected Sticker */}
-            {isSelected && (
-              <div
-                className={styles.stickerControls}
-                onPointerDown={(e) => e.stopPropagation()}
-              >
-                <button
-                  type="button"
-                  className={styles.stickerCtrlBtn}
-                  onClick={(e) => handleLayerSticker(st.id, 'up', e)}
-                  title="Bring Forward"
-                >
-                  ▲
-                </button>
-                <button
-                  type="button"
-                  className={styles.stickerCtrlBtn}
-                  onClick={(e) => handleLayerSticker(st.id, 'down', e)}
-                  title="Send Backward"
-                >
-                  ▼
-                </button>
-                <button
-                  type="button"
-                  className={styles.stickerCtrlBtn}
-                  onClick={(e) => handleDeleteSticker(st.id, e)}
-                  title="Delete Sticker"
-                  style={{ color: '#ff7766' }}
-                >
-                  ✕
-                </button>
-              </div>
-            )}
+    const newW = Math.max(30, Math.min(430, Math.round(targetW)));
+    const newH = Math.max(30, Math.min(480, Math.round(newW / aspect)));
 
-            {/* Corner Resize & Rotate Handles */}
-            {isSelected && (
-              <>
-                <div
-                  className={styles.resizeHandle}
-                  onPointerDown={(e) => handlePointerDownResize(e, st)}
-                  title="Drag to resize"
-                />
-                <div
-                  className={styles.rotateHandle}
-                  onPointerDown={(e) => handlePointerDownRotate(e, st)}
-                  title="Drag to rotate"
-                />
-              </>
-            )}
+    onUpdateStickers(
+      stickers.map((s) => (s.id === selectedId ? { ...s, width: newW, height: newH } : s))
+    );
+  };
 
-            {/* Visual Media Rendering (GIFs & Images) */}
-            {url ? (
-              <img
-                src={url}
-                alt={st.label || 'Sticker'}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: 'contain',
-                  pointerEvents: 'none',
-                }}
-                draggable={false}
-              />
-            ) : (
-              // Default Fallback Badge
-              <div
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  background:
-                    st.type === 'seal'
-                      ? '#9e3223'
-                      : st.type === 'stamp'
-                      ? '#fff8ee'
-                      : 'rgba(255, 248, 235, 0.95)',
-                  color: st.type === 'seal' ? '#ffe0d8' : '#3c2415',
-                  borderRadius: st.type === 'seal' ? '50%' : '6px',
-                  border:
-                    st.type === 'stamp'
-                      ? '2px dashed #8d735a'
-                      : '1.5px solid #d5b376',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  padding: '4px',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
-                }}
-              >
-                {st.label || 'Sticker'}
-              </div>
-            )}
-          </div>
+  const handleNudgeSize = (delta: number) => {
+    if (!selectedSticker) return;
+    const curW = selectedSticker.width || 80;
+    handleSetWidth(curW + delta);
+  };
+
+  const handleResetAspect = () => {
+    if (!selectedId) return;
+    const st = stickers.find((s) => s.id === selectedId);
+    if (!st) return;
+    const url = st.customUrl || (st.mediaId ? mediaUrls[st.mediaId] : null);
+    if (!url) return;
+
+    const testImg = new Image();
+    testImg.onload = () => {
+      if (testImg.naturalWidth && testImg.naturalHeight) {
+        const aspect = testImg.naturalWidth / testImg.naturalHeight;
+        const curW = st.width || 180;
+        const newH = Math.round(curW / aspect);
+        onUpdateStickers(
+          stickers.map((s) => (s.id === selectedId ? { ...s, height: newH } : s))
         );
-      })}
+      }
+    };
+    testImg.src = url;
+  };
+
+  const handleCenterSticker = () => {
+    if (!selectedId) return;
+    onUpdateStickers(
+      stickers.map((s) => (s.id === selectedId ? { ...s, x: 50, y: 50 } : s))
+    );
+  };
+
+  const handleResetRotation = () => {
+    if (!selectedId) return;
+    onUpdateStickers(
+      stickers.map((s) => (s.id === selectedId ? { ...s, rotationDeg: 0 } : s))
+    );
+  };
+
+  return (
+    <div className={styles.stickerCanvasContainer}>
+      <div
+        ref={containerRef}
+        className={`${styles.interactivePage} ${className}`.trim()}
+        style={{ width: `${width}px`, height: `${height}px` }}
+        onClick={handleBoardClick}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerUp}
+      >
+        {/* Background Parchment */}
+        {backgroundSrc && (
+          <img
+            src={backgroundSrc}
+            alt=""
+            className={styles.interactivePageBg}
+            draggable={false}
+          />
+        )}
+
+        {/* Embedded Page Text / Memories content */}
+        {children}
+
+        {/* Stickers Layer */}
+        {stickers.map((st) => {
+          const isSelected = st.id === selectedId;
+          const sw = st.width || 80;
+          const sh = st.height || 80;
+          const url = st.customUrl || (st.mediaId ? mediaUrls[st.mediaId] : null);
+
+          return (
+            <div
+              key={st.id}
+              className={`${styles.stickerElement} ${
+                isSelected ? styles.stickerElementSelected : ''
+              }`}
+              style={{
+                left: `${st.x}%`,
+                top: `${st.y}%`,
+                width: `${sw}px`,
+                height: `${sh}px`,
+                transform: `translate(-50%, -50%) rotate(${st.rotationDeg || 0}deg)`,
+                zIndex: st.zIndex || 1,
+              }}
+              onPointerDown={(e) => handlePointerDownSticker(e, st)}
+            >
+              {/* Dimension Badge for Selected Sticker */}
+              {isSelected && (
+                <div className={styles.stickerDimensionBadge}>
+                  {sw} × {sh}px
+                </div>
+              )}
+
+              {/* Control Bar for Selected Sticker */}
+              {isSelected && (
+                <div
+                  className={styles.stickerControls}
+                  onPointerDown={(e) => e.stopPropagation()}
+                >
+                  <button
+                    type="button"
+                    className={styles.stickerCtrlBtn}
+                    onClick={(e) => handleLayerSticker(st.id, 'up', e)}
+                    title="Bring Forward"
+                  >
+                    ▲
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.stickerCtrlBtn}
+                    onClick={(e) => handleLayerSticker(st.id, 'down', e)}
+                    title="Send Backward"
+                  >
+                    ▼
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.stickerCtrlBtn}
+                    onClick={(e) => handleDeleteSticker(st.id, e)}
+                    title="Delete Sticker"
+                    style={{ color: '#ff7766' }}
+                  >
+                    ✕
+                  </button>
+                </div>
+              )}
+
+              {/* Corner Resize & Rotate Handles */}
+              {isSelected && (
+                <>
+                  <div
+                    className={styles.resizeHandle}
+                    onPointerDown={(e) => handlePointerDownResize(e, st)}
+                    title="Drag to resize (proportional)"
+                  />
+                  <div
+                    className={styles.rotateHandle}
+                    onPointerDown={(e) => handlePointerDownRotate(e, st)}
+                    title="Drag to rotate"
+                  />
+                </>
+              )}
+
+              {/* Visual Media Rendering (GIFs & Images) */}
+              {url ? (
+                <img
+                  src={url}
+                  alt={st.label || 'Sticker'}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'contain',
+                    pointerEvents: 'none',
+                  }}
+                  draggable={false}
+                />
+              ) : (
+                // Default Fallback Badge
+                <div
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background:
+                      st.type === 'seal'
+                        ? '#9e3223'
+                        : st.type === 'stamp'
+                        ? '#fff8ee'
+                        : 'rgba(255, 248, 235, 0.95)',
+                    color: st.type === 'seal' ? '#ffe0d8' : '#3c2415',
+                    borderRadius: st.type === 'seal' ? '50%' : '6px',
+                    border:
+                      st.type === 'stamp'
+                        ? '2px dashed #8d735a'
+                        : '1.5px solid #d5b376',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    textAlign: 'center',
+                    padding: '4px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.25)',
+                  }}
+                >
+                  {st.label || 'Sticker'}
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Sizing & Positioning Inspector Bar when a sticker/image is selected */}
+      {selectedSticker && (
+        <div className={styles.stickerInspector} onClick={(e) => e.stopPropagation()}>
+          <div className={styles.inspectorHeader}>
+            <span className={styles.inspectorTitle}>
+              Selected: <strong>{selectedSticker.label || 'Item'}</strong>
+            </span>
+            <span className={styles.inspectorSizeBadge}>
+              {selectedSticker.width || 80} × {selectedSticker.height || 80}px ({selectedSticker.rotationDeg || 0}°)
+            </span>
+          </div>
+
+          {/* Size Slider & Nudge Buttons */}
+          <div className={styles.inspectorRow}>
+            <span className={styles.inspectorLabel}>Size:</span>
+            <button
+              type="button"
+              className={styles.sizeNudgeBtn}
+              onClick={() => handleNudgeSize(-15)}
+              title="Shrink by 15px"
+            >
+              −
+            </button>
+            <input
+              type="range"
+              min="30"
+              max="430"
+              step="5"
+              value={selectedSticker.width || 80}
+              onChange={(e) => handleSetWidth(Number(e.target.value))}
+              className={styles.sizeSlider}
+            />
+            <button
+              type="button"
+              className={styles.sizeNudgeBtn}
+              onClick={() => handleNudgeSize(15)}
+              title="Enlarge by 15px"
+            >
+              +
+            </button>
+            <span className={styles.sizeValue}>{selectedSticker.width || 80}px</span>
+          </div>
+
+          {/* Quick Presets */}
+          <div className={styles.inspectorRow}>
+            <span className={styles.inspectorLabel}>Presets:</span>
+            <div className={styles.presetGroup}>
+              <button type="button" className={styles.presetBtn} onClick={() => handleSetWidth(80)}>
+                Small (80px)
+              </button>
+              <button type="button" className={styles.presetBtn} onClick={() => handleSetWidth(160)}>
+                Medium (160px)
+              </button>
+              <button type="button" className={styles.presetBtn} onClick={() => handleSetWidth(260)}>
+                Large (260px)
+              </button>
+              <button type="button" className={styles.presetBtn} onClick={() => handleSetWidth(380)}>
+                Full Page (380px)
+              </button>
+              <button
+                type="button"
+                className={styles.presetBtn}
+                onClick={handleResetAspect}
+                title="Restore original image aspect ratio"
+              >
+                ↺ Reset Ratio
+              </button>
+            </div>
+          </div>
+
+          {/* Alignment & Tools */}
+          <div className={styles.inspectorRow}>
+            <span className={styles.inspectorLabel}>Tools:</span>
+            <div className={styles.toolBtnGroup}>
+              <button type="button" className={styles.toolBtn} onClick={handleCenterSticker}>
+                ✛ Center
+              </button>
+              <button type="button" className={styles.toolBtn} onClick={handleResetRotation}>
+                ↺ 0° Straight
+              </button>
+              <button
+                type="button"
+                className={styles.toolBtn}
+                onClick={(e) => handleLayerSticker(selectedSticker.id, 'up', e)}
+                title="Bring Forward"
+              >
+                ▲ Up
+              </button>
+              <button
+                type="button"
+                className={styles.toolBtn}
+                onClick={(e) => handleLayerSticker(selectedSticker.id, 'down', e)}
+                title="Send Backward"
+              >
+                ▼ Down
+              </button>
+              <button
+                type="button"
+                className={styles.toolBtnDelete}
+                onClick={(e) => handleDeleteSticker(selectedSticker.id, e)}
+                title="Delete from page"
+              >
+                ✕ Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -25,7 +25,7 @@ import { OpeningEnvelope } from '../OpeningEnvelope/OpeningEnvelope';
 import { recordEventIn } from '../../services/tracking/visitorTracking';
 import { STORYBOOK_SPREADS } from '../Storybook/storybookData';
 import { ThreePageFlipPrototype, SHEET_COUNT } from '../Storybook/ThreePageFlipPrototype';
-import { BookReadingNote } from '../Storybook/BookReadingNote';
+import { BookInstructionBanner } from '../Storybook/BookInstructionBanner';
 import { GlobalAtmosphere, type EnvState } from '../../components/Environment/GlobalAtmosphere';
 import { FinalQuestionModal } from '../../components/RocketInteraction/FinalQuestionModal';
 import type { SequenceTimelineState } from '../FlowerTunnel/types';
@@ -242,6 +242,8 @@ export const CinematicSequence = memo(function CinematicSequence({
   const [showOpeningEnvelope, setShowOpeningEnvelope] = useState(!isGardenDirect);
   const [isLandedOnTip, setIsLandedOnTip] = useState(false);
   const isLandedOnTipRef = useRef(false);
+  const [isBookReading, setIsBookReading] = useState(isDirectMode);
+  const isBookReadingRef = useRef(isDirectMode);
   const applyFrameRef = useRef<((p: number) => void) | null>(null);
 
   // Decoupled memory ref for butterfly screen position: allows ButterflyGlitterTrail
@@ -430,6 +432,13 @@ export const CinematicSequence = memo(function CinematicSequence({
       if (landed !== isLandedOnTipRef.current) {
         isLandedOnTipRef.current = landed;
         setIsLandedOnTip(landed);
+      }
+
+      // Active Book Reading Zone: banner appears when book opens (p >= 0.44) and remains through all pages (p <= 0.79)
+      const readingActive = (p >= 0.44 && p <= 0.79) || isDirectMode;
+      if (readingActive !== isBookReadingRef.current) {
+        isBookReadingRef.current = readingActive;
+        setIsBookReading(readingActive);
       }
 
       // Unified Physical Storybook Lifecycle (Presence in Pergola, Opening, Multi-Sheet Reading)
@@ -711,11 +720,6 @@ export const CinematicSequence = memo(function CinematicSequence({
             showControls={false}
           />
           <div id="storybook-butterfly-anchor" className={styles.bookButterflyAnchor} />
-          {/* Physical Handwritten Reading Note resting on the book */}
-          <BookReadingNote
-            isOpen={coverProgress >= 0.95}
-            turnProgress={turnProgress}
-          />
         </div>
 
         {/* Layer 3: Opening Flower Tunnel Canvas (Starts immediately when envelope is opened) */}
@@ -755,6 +759,11 @@ export const CinematicSequence = memo(function CinematicSequence({
             />
           </div>
         </div>
+
+        {/* Layer 4.5: Welcome Instruction Banner Floating Centered Above Open Scrapbook */}
+        <BookInstructionBanner
+          isOpen={isBookReading}
+        />
 
         {/* Layer 5: Final Question & YES/NO Interaction on Rocket Tip */}
         <FinalQuestionModal

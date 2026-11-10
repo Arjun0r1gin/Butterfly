@@ -161,7 +161,7 @@ export class FlowerTunnelRenderer {
         const currentX = petal.xNorm * w + Math.sin(timeSec * petal.swaySpeed + p) * petal.swayAmp;
         const rotation = petal.initialRotation + timeSec * petal.rotationSpeed;
 
-        const baseSize = 140 * petal.scale;
+        const baseSize = 123 * petal.scale;
         const drawW = baseSize * sprite.sqrtAspect;
         const drawH = baseSize * sprite.invSqrtAspect;
 

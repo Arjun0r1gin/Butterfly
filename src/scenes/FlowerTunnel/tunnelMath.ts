@@ -52,9 +52,9 @@ export function initializeTunnelParticles(
 
     // Dynamic flower count per ring: scales proportionally with radius so outer rings
     // never stretch thin or create gaps along the expanding circumference.
-    // Reference radius ~1350px provides ~110px spacing between ~260px-340px flowers (>55% overlap).
+    // Refined sizing (~12% smaller flowers: 101px baseRadius with ~98px spacing retains >55% overlap).
     const circumference = 2 * Math.PI * (ringRadiusRatio * 1350);
-    const flowersInRing = isCore ? 8 : Math.max(12, Math.round(circumference / 110));
+    const flowersInRing = isCore ? 9 : Math.max(14, Math.round(circumference / 98));
     const angleStep = (Math.PI * 2) / flowersInRing;
 
     // Angular phase staggering between adjacent rings creates gapless shingled masonry
@@ -75,12 +75,12 @@ export function initializeTunnelParticles(
       // Subtle z-depth offset for natural overlapping without z-fighting
       const depthOffset = ring * 12.0 + ((Math.sin(particleId * 31.1) + 1) / 2 - 0.5) * 20.0;
 
-      // Natural blossom size: large enough to overlap and completely blanket viewport
+      // Natural blossom size: refined by ~12% while maintaining complete gapless viewport coverage
       // Outer flowers scale slightly larger to ensure total coverage beyond edges
       const scaleFactor =
         (isCore ? 1.0 : 1.05 + (ring / numRings) * 0.25) +
         ((Math.sin(particleId * 23.3) + 1) / 2) * 0.35;
-      const baseRadius = 115.0 * scaleFactor;
+      const baseRadius = 101.0 * scaleFactor;
 
       // Balanced variety distribution across all 16 watercolor assets
       const varietyIndex = (particleId * 7 + ring * 3) % varietyCount;

@@ -10,6 +10,7 @@ import { SceneContainer } from '../../components/common/SceneContainer';
 import { SCENE_IDS } from '../../utils/constants';
 import { STORYBOOK_SPREADS } from './storybookData';
 import { ThreePageFlipPrototype } from './ThreePageFlipPrototype';
+import { BookInstructionBanner } from './BookInstructionBanner';
 import { useSceneTimeline } from '../../hooks/useSceneTimeline';
 import { gsap } from '../../animations/gsapInit';
 import styles from './Storybook.module.css';
@@ -100,6 +101,9 @@ export const Storybook = memo(function Storybook({
 
         {/* Butterfly Character Floating Anchor Placeholder */}
         <div id="storybook-butterfly-anchor" className={styles.butterflyAnchor} aria-hidden="true" />
+
+        {/* Welcome Instruction Banner Centered Floating Above Book */}
+        <BookInstructionBanner isOpen={true} />
       </div>
     </SceneContainer>
   );

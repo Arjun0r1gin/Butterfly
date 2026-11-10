@@ -82,7 +82,7 @@ export const RightPageContent = memo(function RightPageContent({
 }: RightPageContentProps) {
   const typo = pageData.typography || {};
   const fontFamily = typo.fontFamily || "'Caveat', 'Patrick Hand', cursive, sans-serif";
-  const fontSize = typo.fontSize ? `${(Math.max(38, typo.fontSize) / 34) * 1.55}rem` : '1.55rem';
+  const fontSize = typo.fontSize ? `${typo.fontSize}px` : '48px';
   const textColor = typo.color && typo.color !== '#17120F' ? typo.color : '#0a0705';
   const lineHeight = typo.lineHeight || 1.48;
   const textAlign = typo.textAlign || 'left';

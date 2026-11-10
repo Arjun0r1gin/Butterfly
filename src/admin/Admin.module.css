@@ -596,27 +596,231 @@
 
 .resizeHandle {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   background: var(--admin-gold-bright);
-  border: 2px solid #2b1504;
+  border: 2px solid #1a0f07;
   border-radius: 50%;
-  right: -6px;
-  bottom: -6px;
-  cursor: se-resize;
+  right: -8px;
+  bottom: -8px;
+  cursor: nwse-resize;
+  box-shadow: 0 0 8px rgba(229, 189, 117, 0.7);
+  transition: transform 0.15s ease, background 0.15s ease;
+  z-index: 1000;
+  touch-action: none;
+}
+
+.resizeHandle:hover {
+  transform: scale(1.25);
+  background: #ffffff;
 }
 
 .rotateHandle {
   position: absolute;
-  width: 12px;
-  height: 12px;
+  width: 16px;
+  height: 16px;
   background: #5dade2;
-  border: 2px solid #2b1504;
+  border: 2px solid #1a0f07;
   border-radius: 50%;
-  top: -18px;
+  top: -22px;
   left: 50%;
   transform: translateX(-50%);
-  cursor: crosshair;
+  cursor: grab;
+  box-shadow: 0 0 8px rgba(93, 173, 226, 0.7);
+  transition: transform 0.15s ease;
+  z-index: 1000;
+  touch-action: none;
+}
+
+.rotateHandle:hover {
+  transform: translateX(-50%) scale(1.25);
+}
+
+.stickerDimensionBadge {
+  position: absolute;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(18, 12, 8, 0.92);
+  border: 1px solid rgba(229, 189, 117, 0.6);
+  border-radius: 12px;
+  padding: 1px 7px;
+  color: #fff9ee;
+  font-family: monospace;
+  font-size: 11px;
+  white-space: nowrap;
+  pointer-events: none;
+  z-index: 1000;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+/* Sizing & Positioning Inspector Bar */
+.stickerCanvasContainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+}
+
+.stickerInspector {
+  width: 100%;
+  max-width: 440px;
+  background: linear-gradient(180deg, rgba(32, 22, 16, 0.96) 0%, rgba(20, 13, 9, 0.98) 100%);
+  border: 1.5px solid rgba(229, 189, 117, 0.45);
+  border-radius: 10px;
+  padding: 12px 14px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  box-sizing: border-box;
+}
+
+.inspectorHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(229, 189, 117, 0.2);
+  padding-bottom: 6px;
+  font-size: 0.82rem;
+}
+
+.inspectorTitle {
+  color: #f7eedb;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 60%;
+}
+
+.inspectorTitle strong {
+  color: var(--admin-gold-bright);
+}
+
+.inspectorSizeBadge {
+  color: var(--admin-gold-primary);
+  font-family: monospace;
+  font-size: 0.78rem;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.inspectorRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+}
+
+.inspectorLabel {
+  color: var(--admin-gold-primary);
+  font-weight: 600;
+  min-width: 52px;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sizeNudgeBtn {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  background: rgba(229, 189, 117, 0.15);
+  border: 1px solid rgba(229, 189, 117, 0.4);
+  color: #fff9ee;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  transition: all 0.15s ease;
+}
+
+.sizeNudgeBtn:hover {
+  background: rgba(229, 189, 117, 0.35);
+  border-color: var(--admin-gold-bright);
+}
+
+.sizeSlider {
+  flex: 1;
+  accent-color: var(--admin-gold-bright);
+  cursor: pointer;
+}
+
+.sizeValue {
+  color: #fff9ee;
+  font-family: monospace;
+  font-size: 0.8rem;
+  min-width: 44px;
+  text-align: right;
+}
+
+.presetGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  flex: 1;
+}
+
+.presetBtn {
+  background: rgba(45, 30, 20, 0.8);
+  border: 1px solid rgba(229, 189, 117, 0.35);
+  color: #f7eedb;
+  border-radius: 5px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.presetBtn:hover {
+  background: rgba(229, 189, 117, 0.25);
+  border-color: var(--admin-gold-bright);
+  color: #ffffff;
+}
+
+.toolBtnGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.toolBtn {
+  background: rgba(45, 30, 20, 0.8);
+  border: 1px solid rgba(229, 189, 117, 0.35);
+  color: #f7eedb;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toolBtn:hover {
+  background: rgba(229, 189, 117, 0.25);
+  border-color: var(--admin-gold-bright);
+  color: #ffffff;
+}
+
+.toolBtnDelete {
+  background: rgba(183, 28, 28, 0.25);
+  border: 1px solid rgba(239, 83, 80, 0.5);
+  color: #ffcdd2;
+  border-radius: 5px;
+  padding: 4px 8px;
+  font-size: 0.72rem;
+  cursor: pointer;
+  margin-left: auto;
+  transition: all 0.15s ease;
+}
+
+.toolBtnDelete:hover {
+  background: rgba(183, 28, 28, 0.5);
+  color: #ffffff;
 }
 
 /* Form Controls in Inspector */

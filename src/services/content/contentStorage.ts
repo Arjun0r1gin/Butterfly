@@ -164,8 +164,22 @@ function sanitizeContent(raw: Partial<ButterflyContent>): ButterflyContent {
       : DEFAULT_BUTTERFLY_CONTENT.spreads;
 
   // Filter out any flower stickers from the right-hand narrative pages
+  // and ensure left pages are blank by default for version < 7
+  const isV7 = (raw.version || 0) >= 7;
   const cleanSpreads = rawSpreads.map((sp) => ({
     ...sp,
+    leftPage: isV7
+      ? {
+          ...sp.leftPage,
+          photos: Array.isArray(sp.leftPage?.photos) ? sp.leftPage.photos : [],
+          stickers: Array.isArray(sp.leftPage?.stickers) ? sp.leftPage.stickers : [],
+          handwrittenNotes: Array.isArray(sp.leftPage?.handwrittenNotes) ? sp.leftPage.handwrittenNotes : [],
+        }
+      : {
+          photos: [],
+          stickers: [],
+          handwrittenNotes: [],
+        },
     rightPage: {
       ...sp.rightPage,
       stickers: (sp.rightPage.stickers || []).filter((st) => {
@@ -190,7 +204,7 @@ function sanitizeContent(raw: Partial<ButterflyContent>): ButterflyContent {
   }));
 
   return {
-    version: 6,
+    version: 7,
     lastSaved: raw.lastSaved || Date.now(),
     spreads: cleanSpreads,
     finalQuestion,

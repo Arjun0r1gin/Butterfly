@@ -17,6 +17,7 @@
   justify-content: center;
   pointer-events: none;
   z-index: var(--z-scene-mid);
+  background: #ffffff;
 }
 
 .tunnelBackground {
@@ -24,7 +25,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
-  background: radial-gradient(circle at 50% 50%, #fef8f5 0%, #fae8e3 45%, #f6d8d2 100%);
+  background: #ffffff;
   z-index: 1;
   pointer-events: none;
   will-change: opacity;

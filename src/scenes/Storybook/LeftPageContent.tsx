@@ -79,6 +79,8 @@ export const LeftPageContent = memo(function LeftPageContent({
               style={{
                 left: `${st.x}%`,
                 top: `${st.y}%`,
+                width: `${((st.width || 80) / 440) * 100}%`,
+                height: `${((st.height || 80) / 490) * 100}%`,
                 transform: `translate(-50%, -50%) rotate(${st.rotationDeg}deg)`,
               }}
             >

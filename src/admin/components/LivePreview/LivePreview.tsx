@@ -7,6 +7,7 @@
 import React, { useState } from 'react';
 import type { ButterflyContent } from '../../../services/content/types';
 import { ThreePageFlipPrototype } from '../../../scenes/Storybook/ThreePageFlipPrototype';
+import { BookInstructionBanner } from '../../../scenes/Storybook/BookInstructionBanner';
 import { FinalQuestionModal } from '../../../components/RocketInteraction/FinalQuestionModal';
 import styles from '../../Admin.module.css';
 
@@ -186,6 +187,11 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ content }) => {
               showControls={false}
               spreads={content.spreads}
             />
+
+            {/* Instruction Banner above the Book */}
+            {previewMode === 'book' && (
+              <BookInstructionBanner isOpen={coverProgress >= 0.95} />
+            )}
           </div>
 
           {/* Progress Slider */}
