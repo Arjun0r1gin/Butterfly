@@ -219,7 +219,7 @@ export const FinalPageEditor: React.FC<FinalPageEditorProps> = ({
                 type="text"
                 className={styles.formInput}
                 value={fq.celebrationTitle || ''}
-                placeholder="APPOINTMENT CONFIRMED! ❤️"
+                placeholder="APPOINTMENT CONFIRMED!"
                 onChange={(e) => updateFinalQuestion((prev) => ({ ...prev, celebrationTitle: e.target.value }))}
               />
             </div>
@@ -236,12 +236,12 @@ export const FinalPageEditor: React.FC<FinalPageEditorProps> = ({
             </div>
 
             <div className={styles.formGroup}>
-              <label className={styles.formLabel}>Handwritten Promise Line</label>
+              <label className={styles.formLabel}>Handwritten Promise Line (Optional)</label>
               <input
                 type="text"
                 className={styles.formInput}
                 value={fq.celebrationPromise || ''}
-                placeholder="I promise I'll be there! 🥹"
+                placeholder="Leave blank to omit"
                 onChange={(e) => updateFinalQuestion((prev) => ({ ...prev, celebrationPromise: e.target.value }))}
               />
             </div>

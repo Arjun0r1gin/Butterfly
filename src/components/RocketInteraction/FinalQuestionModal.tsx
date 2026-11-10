@@ -319,7 +319,7 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
                 onClick={handleYesClick}
                 aria-label="Say Yes"
               >
-                <span>YES ❤️</span>
+                <span>YES</span>
                 <span className={styles.buttonArrow} aria-hidden="true">
                   &rarr;
                 </span>

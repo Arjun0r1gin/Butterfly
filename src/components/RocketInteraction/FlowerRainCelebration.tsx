@@ -55,12 +55,12 @@ export const FlowerRainCelebration = memo(function FlowerRainCelebration({
   const rafRef = useRef<number | null>(null);
   const [showCelebrationCard, setShowCelebrationCard] = useState(false);
 
-  const celebrationTitle = finalQuestion?.celebrationTitle || 'APPOINTMENT CONFIRMED! ❤️';
+  const rawTitle = finalQuestion?.celebrationTitle || 'APPOINTMENT CONFIRMED!';
+  const celebrationTitle = rawTitle.replace(/❤️|♡/g, '').trim();
   const celebrationMessage =
     finalQuestion?.celebrationMessage ||
     'Thank you for giving me an appointment during lunch break. 🙏';
-  const celebrationPromise =
-    finalQuestion?.celebrationPromise || "I promise I'll be there! 🥹";
+  const celebrationPromise = finalQuestion?.celebrationPromise || '';
   const celebrationGifUrl = finalQuestion?.celebrationGifUrl || CELEBRATION_GIF_URL;
 
   // Fade in celebration card smoothly as the flower cascade begins
@@ -314,34 +314,20 @@ export const FlowerRainCelebration = memo(function FlowerRainCelebration({
 
           <p className={styles.celebrationMessage}>{celebrationMessage}</p>
 
-          <p className={styles.celebrationPromise}>{celebrationPromise}</p>
+          {celebrationPromise ? (
+            <p className={styles.celebrationPromise}>{celebrationPromise}</p>
+          ) : null}
 
-          {/* Dedicated Replaceable Celebration GIF / Floral Fallback */}
-          <div className={styles.celebrationGifContainer}>
-            {celebrationGifUrl ? (
+          {/* Dedicated Replaceable Celebration GIF (when uploaded) */}
+          {celebrationGifUrl ? (
+            <div className={styles.celebrationGifContainer}>
               <img
                 src={celebrationGifUrl}
                 alt="Appointment Celebration GIF"
                 className={styles.celebrationGif}
               />
-            ) : (
-              <div className={styles.celebrationVignette} aria-hidden="true">
-                <div className={styles.vignetteFiligreeLine}>
-                  <span className={styles.vignetteStar}>✦</span>
-                  <span className={styles.vignetteRule} />
-                  <span className={styles.vignetteSealEmoji}>💌</span>
-                  <span className={styles.vignetteRule} />
-                  <span className={styles.vignetteStar}>✦</span>
-                </div>
-                <div className={styles.vignetteWreath}>
-                  <span className={styles.vignetteFloralCenter}>🌸</span>
-                  <span className={styles.vignetteSparkle}>✨</span>
-                  <span className={styles.vignetteFloralCenter}>🌸</span>
-                </div>
-                <p className={styles.vignetteDateText}>18 March · B-Block Corridor</p>
-              </div>
-            )}
-          </div>
+            </div>
+          ) : null}
 
           <button
             type="button"
