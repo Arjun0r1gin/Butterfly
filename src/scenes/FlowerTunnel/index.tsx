@@ -57,7 +57,7 @@ export const FlowerTunnel = memo(function FlowerTunnel({
   const timelineRef = useRef<gsap.core.Timeline | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const isTabVisibleRef = useRef<boolean>(true);
-  const poolRef = useRef<ProjectedFlowerPool>(new ProjectedFlowerPool(380));
+  const poolRef = useRef<ProjectedFlowerPool>(new ProjectedFlowerPool(850));
 
   const isStartedRef = useRef(isStarted);
   isStartedRef.current = isStarted;

@@ -153,12 +153,15 @@ function sanitizeContent(raw: Partial<ButterflyContent>): ButterflyContent {
   const isOldQuestion =
     !raw.finalQuestion ||
     raw.finalQuestion.chapterHeader === 'CHAPTER IV: BEYOND THE HORIZON' ||
-    (raw.version || 0) < 4;
+    (raw.version || 0) < 5;
+  const finalQuestion = isOldQuestion
+    ? DEFAULT_BUTTERFLY_CONTENT.finalQuestion
+    : { ...raw.finalQuestion!, stickers: [] };
   return {
-    version: 4,
+    version: 5,
     lastSaved: raw.lastSaved || Date.now(),
     spreads: isV3 && Array.isArray(raw.spreads) && raw.spreads.length > 0 ? raw.spreads : DEFAULT_BUTTERFLY_CONTENT.spreads,
-    finalQuestion: isOldQuestion ? DEFAULT_BUTTERFLY_CONTENT.finalQuestion : raw.finalQuestion!,
+    finalQuestion,
     mediaAssets: Array.isArray(raw.mediaAssets) ? raw.mediaAssets : [],
     audioTracks: Array.isArray(raw.audioTracks) ? raw.audioTracks : DEFAULT_BUTTERFLY_CONTENT.audioTracks,
   };

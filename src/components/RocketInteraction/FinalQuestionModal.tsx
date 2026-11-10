@@ -11,7 +11,6 @@ import { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { FlowerRainCelebration } from './FlowerRainCelebration';
 import { loadSavedContent } from '../../services/content/contentStorage';
 import type { ButterflyContent, FinalQuestionContent } from '../../services/content/types';
-import { getMediaUrl } from '../../services/content/indexedDB';
 import { recordEventOut } from '../../services/tracking/visitorTracking';
 import styles from './FinalQuestionModal.module.css';
 
@@ -37,7 +36,6 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
   const [fqContent, setFqContent] = useState<FinalQuestionContent>(() => {
     return loadSavedContent().finalQuestion;
   });
-  const [stickerUrls, setStickerUrls] = useState<Record<string, string>>({});
 
   useEffect(() => {
     const handleContentUpdate = (e: Event) => {
@@ -49,24 +47,6 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
     window.addEventListener('butterfly_content_updated', handleContentUpdate);
     return () => window.removeEventListener('butterfly_content_updated', handleContentUpdate);
   }, []);
-
-  useEffect(() => {
-    if (!fqContent.stickers || fqContent.stickers.length === 0) return;
-    const mediaIds = fqContent.stickers.filter((s) => s.mediaId).map((s) => s.mediaId!);
-    if (mediaIds.length === 0) return;
-    Promise.all(
-      mediaIds.map(async (mId) => {
-        const u = await getMediaUrl(mId);
-        return { mId, u };
-      })
-    ).then((res) => {
-      const dict: Record<string, string> = {};
-      res.forEach((r) => {
-        if (r.u) dict[r.mId] = r.u;
-      });
-      setStickerUrls((prev) => ({ ...prev, ...dict }));
-    });
-  }, [fqContent.stickers]);
 
   const lastDodgeTimeRef = useRef<number>(0);
   const dodgeCountRef = useRef<number>(0);
@@ -328,33 +308,6 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
                 </p>
               ) : null}
             </div>
-
-            {/* Placed Stickers / GIFs on Final Proposal */}
-            {fqContent.stickers?.map((st) => {
-              const url = st.customUrl || (st.mediaId ? stickerUrls[st.mediaId] : null);
-              if (!url) return null;
-              return (
-                <div
-                  key={st.id}
-                  style={{
-                    position: 'absolute',
-                    left: `${st.x}%`,
-                    top: `${st.y}%`,
-                    width: `${st.width || 80}px`,
-                    height: `${st.height || 80}px`,
-                    transform: `translate(-50%, -50%) rotate(${st.rotationDeg || 0}deg)`,
-                    zIndex: st.zIndex || 5,
-                    pointerEvents: 'none',
-                  }}
-                >
-                  <img
-                    src={url}
-                    alt={st.label || 'Sticker'}
-                    style={{ width: '100%', height: '100%', objectFit: 'contain' }}
-                  />
-                </div>
-              );
-            })}
 
             {/* Interactive Actions Row */}
             <div className={styles.actionsRow}>

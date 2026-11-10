@@ -341,65 +341,115 @@
 
 .celebrationCard {
   position: relative;
-  width: min(580px, 88vw);
+  width: min(560px, 88vw);
   background: radial-gradient(
-    circle at 50% 25%,
-    rgba(45, 18, 8, 0.88) 0%,
-    rgba(20, 7, 3, 0.94) 100%
+    ellipse at 50% 20%,
+    #fffdfa 0%,
+    #faf4ea 55%,
+    #f3e8d6 100%
   );
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-radius: 24px;
-  border: 1.5px solid rgba(255, 215, 120, 0.75);
+  border-radius: 20px;
+  border: 2px solid rgba(197, 154, 91, 0.75);
+  outline: 1px solid rgba(197, 154, 91, 0.35);
+  outline-offset: -8px;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.70),
-    0 0 40px rgba(255, 215, 120, 0.30);
-  padding: 38px 32px 34px;
+    0 24px 60px rgba(35, 15, 6, 0.32),
+    0 0 50px rgba(230, 180, 115, 0.35),
+    inset 0 0 30px rgba(215, 175, 120, 0.22);
+  padding: 38px 34px 34px;
   text-align: center;
+  overflow: hidden;
+}
+
+/* Antique Scrapbook Corner Accents */
+.cardCorner {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  border-color: #c59a5b;
+  border-style: solid;
+  pointer-events: none;
+  opacity: 0.85;
+}
+
+.cornerTL {
+  top: 12px;
+  left: 12px;
+  border-width: 2.5px 0 0 2.5px;
+}
+
+.cornerTR {
+  top: 12px;
+  right: 12px;
+  border-width: 2.5px 2.5px 0 0;
+}
+
+.cornerBL {
+  bottom: 12px;
+  left: 12px;
+  border-width: 0 0 2.5px 2.5px;
+}
+
+.cornerBR {
+  bottom: 12px;
+  right: 12px;
+  border-width: 0 2.5px 2.5px 0;
+}
+
+/* Scrapbook Memory Stamp */
+.celebrationStamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 12px;
+  padding: 4px 14px;
+  background: rgba(184, 91, 46, 0.10);
+  border: 1px dashed rgba(184, 91, 46, 0.55);
+  border-radius: 9999px;
+  font-family: 'Cinzel', Georgia, serif;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: #a64b2a;
 }
 
 .celebrationTitle {
   font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.8rem, 3.2vw, 2.5rem);
+  font-size: clamp(1.6rem, 2.8vw, 2.2rem);
   font-weight: 700;
-  letter-spacing: 0.06em;
-  color: #ffd779;
+  letter-spacing: 0.08em;
+  color: #5a1827;
   margin: 0 0 12px;
-  text-shadow: 0 0 24px rgba(255, 215, 120, 0.50);
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8), 0 0 16px rgba(184, 91, 46, 0.22);
 }
 
 .celebrationMessage {
-  font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.05rem, 1.8vw, 1.35rem);
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-size: clamp(1.15rem, 1.9vw, 1.4rem);
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   line-height: 1.45;
-  color: #fff6e8;
+  color: #3d2417;
   margin: 0 auto 10px;
-  max-width: 480px;
-  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.7);
+  max-width: 460px;
 }
 
 .celebrationPromise {
   font-family: 'Caveat', cursive, sans-serif;
-  font-size: clamp(1.4rem, 2.4vw, 1.75rem);
+  font-size: clamp(1.45rem, 2.4vw, 1.85rem);
   font-weight: 700;
-  color: #f7be58;
-  margin: 0 auto 20px;
+  color: #b85b2e;
+  margin: 0 auto 18px;
   line-height: 1.3;
-  text-shadow: 0 2px 12px rgba(247, 190, 88, 0.4);
 }
 
-/* Dedicated Replaceable Celebration GIF Placeholder */
+/* Dedicated Replaceable Celebration GIF Container / Floral Vignette */
 .celebrationGifContainer {
   margin: 0 auto 24px;
-  width: min(280px, 75vw);
-  min-height: 140px;
+  width: min(340px, 80vw);
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
-  overflow: hidden;
 }
 
 .celebrationGif {
@@ -408,66 +458,64 @@
   max-height: 240px;
   object-fit: contain;
   border-radius: 14px;
-  border: 1.5px solid rgba(255, 215, 120, 0.6);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  border: 1.5px solid rgba(197, 154, 91, 0.75);
+  box-shadow: 0 8px 24px rgba(35, 15, 6, 0.25);
 }
 
-.celebrationGifPlaceholder {
+.celebrationVignette {
   width: 100%;
-  padding: 20px 16px;
+  padding: 16px 20px 18px;
   box-sizing: border-box;
-  background: rgba(30, 14, 6, 0.55);
-  border: 1.5px dashed rgba(255, 215, 120, 0.45);
-  border-radius: 16px;
+  background: rgba(247, 238, 224, 0.70);
+  border: 1px solid rgba(197, 154, 91, 0.50);
+  border-radius: 14px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  transition: border-color 0.3s ease, background 0.3s ease;
+  gap: 6px;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-.placeholderIcon {
-  font-size: 2.2rem;
-  opacity: 0.85;
+.vignetteFiligreeLine {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 80%;
+  max-width: 240px;
 }
 
-.placeholderLabel {
-  font-family: 'Cinzel', Georgia, serif;
-  font-size: 0.92rem;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #fedc7c;
-  font-weight: 600;
-}
-
-.placeholderSub {
-  font-family: 'Cormorant Garamond', Georgia, serif;
-  font-style: italic;
+.vignetteStar {
+  color: #c59a5b;
   font-size: 0.85rem;
-  color: #d1b49a;
-  max-width: 220px;
-  line-height: 1.3;
 }
 
-.celebrationSubtitle {
-  font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
-  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
-  font-weight: 600;
-  letter-spacing: 0.06em;
-  color: #fff6e8;
-  margin: 0 0 18px;
-  opacity: 0.92;
+.vignetteRule {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #c59a5b, transparent);
 }
 
-.celebrationQuote {
+.vignetteSealEmoji {
+  font-size: 1.35rem;
+}
+
+.vignetteWreath {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 1.25rem;
+  margin-top: 2px;
+}
+
+.vignetteDateText {
   font-family: 'Cormorant Garamond', Georgia, serif;
   font-style: italic;
-  font-size: clamp(1.0rem, 1.6vw, 1.18rem);
-  line-height: 1.55;
-  color: #ebd2be;
-  margin: 0 auto 28px;
-  max-width: 460px;
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+  color: #7d5940;
+  margin: 4px 0 0;
 }
 
 .replayButton {
@@ -476,18 +524,18 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  padding: 13px 34px;
+  padding: 13px 36px;
   border-radius: 9999px;
   font-family: 'Cinzel', 'Playfair Display', Georgia, serif;
   font-size: 0.95rem;
   font-weight: 700;
-  letter-spacing: 0.10em;
-  color: #2b1504;
-  background: linear-gradient(135deg, #fedc7c 0%, #f6b33e 50%, #e08b1c 100%);
-  border: 1px solid rgba(255, 245, 180, 0.75);
+  letter-spacing: 0.12em;
+  color: #fffaf0;
+  background: linear-gradient(135deg, #7c1f32 0%, #5a1422 100%);
+  border: 1.5px solid rgba(220, 175, 105, 0.85);
   box-shadow:
-    0 4px 18px rgba(246, 179, 62, 0.42),
-    0 0 28px rgba(246, 179, 62, 0.22);
+    0 6px 20px rgba(90, 20, 34, 0.35),
+    0 0 16px rgba(220, 175, 105, 0.28);
   cursor: pointer;
   outline: none;
   transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.25s ease;
@@ -496,10 +544,10 @@
 }
 
 .replayButton:hover {
-  transform: translateY(-2px) scale(1.04);
+  transform: translateY(-2px) scale(1.03);
   box-shadow:
-    0 8px 26px rgba(246, 179, 62, 0.58),
-    0 0 36px rgba(255, 220, 120, 0.4);
+    0 10px 28px rgba(90, 20, 34, 0.48),
+    0 0 24px rgba(220, 175, 105, 0.45);
 }
 
 .replayButton:active {

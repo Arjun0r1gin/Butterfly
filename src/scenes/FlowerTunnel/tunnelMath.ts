@@ -13,17 +13,17 @@ import { clamp } from '../../utils/math';
 
 export const DEFAULT_TUNNEL_CONFIG: TunnelConfig = {
   ringCount: 20,
-  baseFlowersPerRing: 15,
+  baseFlowersPerRing: 18,
   tunnelDepth: 3000,
   fov: 650,
   initialRadius: 0, // No center opening — center is completely filled!
-  maxRadius: 520,
+  maxRadius: 540,
   swirlStrength: 0.35,
 };
 
 export const MOBILE_TUNNEL_CONFIG: TunnelConfig = {
   ringCount: 16,
-  baseFlowersPerRing: 12,
+  baseFlowersPerRing: 14,
   tunnelDepth: 3000,
   fov: 650,
   initialRadius: 0,
@@ -33,7 +33,7 @@ export const MOBILE_TUNNEL_CONFIG: TunnelConfig = {
 
 /**
  * Initializes particles in concentric swirling rings starting from the absolute center (r=0)
- * out to the outer corners, with randomized gravity and aerodynamic fluttering properties.
+ * out to beyond the outer corners, creating dense, continuous, multi-layered coverage with zero gaps.
  */
 export function initializeTunnelParticles(
   config: TunnelConfig = DEFAULT_TUNNEL_CONFIG,
@@ -47,12 +47,17 @@ export function initializeTunnelParticles(
   for (let ring = 0; ring < numRings; ring++) {
     // Ring 0 is the center core (r ≈ 0). Subsequent rings expand radially.
     const isCore = ring === 0;
-    const flowersInRing = isCore ? 6 : config.baseFlowersPerRing;
+    // Sub-linear radial distribution: concentrates density in center and mid-space
+    const ringRadiusRatio = isCore ? 0.04 : Math.pow(ring / (numRings - 1), 0.78);
+
+    // Dynamic flower count per ring: scales proportionally with radius so outer rings
+    // never stretch thin or create gaps along the expanding circumference.
+    // Reference radius ~1350px provides ~110px spacing between ~260px-340px flowers (>55% overlap).
+    const circumference = 2 * Math.PI * (ringRadiusRatio * 1350);
+    const flowersInRing = isCore ? 8 : Math.max(12, Math.round(circumference / 110));
     const angleStep = (Math.PI * 2) / flowersInRing;
 
-    // Sub-linear radial distribution: concentrates density in center and mid-space
-    const ringRadiusRatio = isCore ? 0.05 : Math.pow(ring / (numRings - 1), 0.72);
-    // Angular phase staggering between adjacent rings creates gapless shingling
+    // Angular phase staggering between adjacent rings creates gapless shingled masonry
     const ringPhase = ring * 0.42 + (ring % 2 === 1 ? angleStep * 0.5 : 0);
 
     for (let f = 0; f < flowersInRing; f++) {
@@ -70,10 +75,12 @@ export function initializeTunnelParticles(
       // Subtle z-depth offset for natural overlapping without z-fighting
       const depthOffset = ring * 12.0 + ((Math.sin(particleId * 31.1) + 1) / 2 - 0.5) * 20.0;
 
-      // Natural blossom size: large enough to overlap and completely blanket space
-      // Core blossoms: ~150px-180px; outer blossoms: ~170px-220px
-      const scaleFactor = (isCore ? 0.95 : 1.0) + ((Math.sin(particleId * 23.3) + 1) / 2) * 0.35;
-      const baseRadius = 100.0 * scaleFactor;
+      // Natural blossom size: large enough to overlap and completely blanket viewport
+      // Outer flowers scale slightly larger to ensure total coverage beyond edges
+      const scaleFactor =
+        (isCore ? 1.0 : 1.05 + (ring / numRings) * 0.25) +
+        ((Math.sin(particleId * 23.3) + 1) / 2) * 0.35;
+      const baseRadius = 115.0 * scaleFactor;
 
       // Balanced variety distribution across all 16 watercolor assets
       const varietyIndex = (particleId * 7 + ring * 3) % varietyCount;
@@ -87,8 +94,8 @@ export function initializeTunnelParticles(
       const wobbleOffset = particleId * 0.4;
 
       // Cascading fall physics parameters (Stage 4)
-      // Slight vertical staggering: flowers at the top fall slightly earlier
-      const staggerBias = (Math.sin(angle) * 0.5 + 0.5) * 0.12;
+      // Vertical staggering: flowers higher up fall slightly later to sustain waterfall replenishment
+      const staggerBias = (Math.sin(angle) * 0.5 + 0.5) * 0.14;
       const fallDelay = clamp(((Math.sin(particleId * 41.9) + 1) / 2) * 0.22 + staggerBias, 0, 0.35);
       const fallSpeedMult = 0.85 + ((Math.cos(particleId * 37.1) + 1) / 2) * 0.45;
       const swayAmp = 20.0 + ((Math.sin(particleId * 29.3) + 1) / 2) * 30.0;
@@ -146,7 +153,7 @@ export class ProjectedFlowerPool {
   public pool: ProjectedFlower[] = [];
   public count: number = 0;
 
-  constructor(size: number = 380) {
+  constructor(size: number = 850) {
     for (let i = 0; i < size; i++) {
       this.pool.push({
         particle: null as any,
@@ -198,8 +205,8 @@ export function projectTunnelParticles(
   if (pool) pool.reset();
   const projected: ProjectedFlower[] = pool ? pool.pool : [];
 
-  // Corner distance: ensures flowers reach beyond all 4 corners of the screen
-  const maxCornerDist = Math.sqrt(centerX * centerX + centerY * centerY) * 1.15;
+  // Corner distance: ensures flowers reach comfortably beyond all 4 corners of the screen (1.42x corner dist)
+  const maxCornerDist = Math.sqrt(centerX * centerX + centerY * centerY) * 1.42;
 
   // Progressive ring activation during initial bloom
   const maxActiveRing = Math.floor(timelineState.activeFlowerRatio * config.ringCount);

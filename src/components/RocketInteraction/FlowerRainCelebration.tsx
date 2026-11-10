@@ -288,7 +288,18 @@ export const FlowerRainCelebration = memo(function FlowerRainCelebration({
         }`}
       >
         <div className={styles.celebrationCard}>
-          <h1 className={styles.celebrationTitle}>Appointment Confirmed! ❤️</h1>
+          {/* Antique Scrapbook Corner Accents */}
+          <div className={`${styles.cardCorner} ${styles.cornerTL}`} aria-hidden="true" />
+          <div className={`${styles.cardCorner} ${styles.cornerTR}`} aria-hidden="true" />
+          <div className={`${styles.cardCorner} ${styles.cornerBL}`} aria-hidden="true" />
+          <div className={`${styles.cardCorner} ${styles.cornerBR}`} aria-hidden="true" />
+
+          {/* Memory Stamp Badge */}
+          <div className={styles.celebrationStamp} aria-hidden="true">
+            <span>★ APPOINTMENT SEALED ★</span>
+          </div>
+
+          <h1 className={styles.celebrationTitle}>APPOINTMENT CONFIRMED! ❤️</h1>
 
           <p className={styles.celebrationMessage}>
             Thank you for giving me an appointment during lunch break. 🙏
@@ -298,7 +309,7 @@ export const FlowerRainCelebration = memo(function FlowerRainCelebration({
             I promise I&apos;ll be there! 🥹
           </p>
 
-          {/* Dedicated Replaceable Celebration GIF Placeholder */}
+          {/* Dedicated Replaceable Celebration GIF / Floral Fallback */}
           <div className={styles.celebrationGifContainer}>
             {CELEBRATION_GIF_URL ? (
               <img
@@ -307,17 +318,20 @@ export const FlowerRainCelebration = memo(function FlowerRainCelebration({
                 className={styles.celebrationGif}
               />
             ) : (
-              <div
-                className={styles.celebrationGifPlaceholder}
-                title="Dedicated GIF Placeholder: Set CELEBRATION_GIF_URL anytime"
-              >
-                <div className={styles.placeholderIcon} aria-hidden="true">
-                  🎬
+              <div className={styles.celebrationVignette} aria-hidden="true">
+                <div className={styles.vignetteFiligreeLine}>
+                  <span className={styles.vignetteStar}>✦</span>
+                  <span className={styles.vignetteRule} />
+                  <span className={styles.vignetteSealEmoji}>💌</span>
+                  <span className={styles.vignetteRule} />
+                  <span className={styles.vignetteStar}>✦</span>
                 </div>
-                <span className={styles.placeholderLabel}>GIF Placeholder</span>
-                <span className={styles.placeholderSub}>
-                  Upload your custom celebration GIF anytime
-                </span>
+                <div className={styles.vignetteWreath}>
+                  <span className={styles.vignetteFloralCenter}>🌸</span>
+                  <span className={styles.vignetteSparkle}>✨</span>
+                  <span className={styles.vignetteFloralCenter}>🌸</span>
+                </div>
+                <p className={styles.vignetteDateText}>18 March · B-Block Corridor</p>
               </div>
             )}
           </div>
