@@ -56,6 +56,9 @@ export interface MusicMarker {
   startTime?: number;
   endTime?: number;
   loop?: boolean;
+  enabled?: boolean;
+  color?: string;
+  size?: number;
 }
 
 export interface PageRightContent {

@@ -285,7 +285,9 @@ export const AdminApp: React.FC = () => {
 
           {activeView === 'media' && <MediaLibrary />}
 
-          {activeView === 'audio' && <AudioLibrary />}
+          {activeView === 'audio' && (
+            <AudioLibrary content={content} onChange={updateContent} />
+          )}
 
           {activeView === 'tracking' && <VisitorTracking />}
 

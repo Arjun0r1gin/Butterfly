@@ -23,7 +23,7 @@ import { audioPlayer } from '../../services/audio/audioPlayer';
 import { NowPlayingPill } from '../../components/common/NowPlayingPill';
 import styles from './Storybook.module.css';
 
-export const SHEET_COUNT = 4;
+export const SHEET_COUNT = 6;
 
 export interface SheetData {
   mesh: THREE.Mesh;
@@ -49,10 +49,12 @@ export interface ThreePageFlipPrototypeProps {
 const PROGRESS_STAGES = [
   { label: 'Closed', p: 0.0, cp: 0.0 },
   { label: 'Spread 1', p: 0.0, cp: 1.0 },
-  { label: 'Turn 1', p: 0.25, cp: 1.0 },
-  { label: 'Turn 2', p: 0.50, cp: 1.0 },
-  { label: 'Turn 3', p: 0.75, cp: 1.0 },
-  { label: 'Turn 4', p: 1.0, cp: 1.0 },
+  { label: 'Turn 1', p: 1 / SHEET_COUNT, cp: 1.0 },
+  { label: 'Turn 2', p: 2 / SHEET_COUNT, cp: 1.0 },
+  { label: 'Turn 3', p: 3 / SHEET_COUNT, cp: 1.0 },
+  { label: 'Turn 4', p: 4 / SHEET_COUNT, cp: 1.0 },
+  { label: 'Turn 5', p: 5 / SHEET_COUNT, cp: 1.0 },
+  { label: 'Spread 6', p: 1.0, cp: 1.0 },
 ];
 
 export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
@@ -150,10 +152,11 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
 
     const updateCameraDistance = () => {
       const aspect = camera.aspect;
-      const targetWidthCoverage = 0.94;
+      // Frame the open book tightly to eliminate empty borders and maximize text readability
+      const targetWidthCoverage = 0.985;
       const desiredFrustumW = COVER_W / targetWidthCoverage;
       const desiredFrustumH = desiredFrustumW / aspect;
-      const minFrustumH = COVER_H / 0.92;
+      const minFrustumH = COVER_H / 0.98;
       const effectiveFrustumH = Math.max(desiredFrustumH, minFrustumH);
       const vFovRad = (camera.fov * Math.PI) / 360;
       const dist = (effectiveFrustumH / 2) / Math.tan(vFovRad);
@@ -512,20 +515,13 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
           lBaseMatRef.current.map = spreadTexs[0].leftTex;
           lBaseMatRef.current.needsUpdate = true;
         }
-        if (sheets[0]) {
-          if (spreadTexs[0]?.rightTex) sheets[0].uniforms.uFrontTexture.value = spreadTexs[0].rightTex;
-          if (spreadTexs[1]?.leftTex) sheets[0].uniforms.uBackTexture.value = spreadTexs[1].leftTex;
-        }
-        if (sheets[1]) {
-          if (spreadTexs[1]?.rightTex) sheets[1].uniforms.uFrontTexture.value = spreadTexs[1].rightTex;
-          if (spreadTexs[2]?.leftTex) sheets[1].uniforms.uBackTexture.value = spreadTexs[2].leftTex;
-        }
-        if (sheets[2]) {
-          if (spreadTexs[2]?.rightTex) sheets[2].uniforms.uFrontTexture.value = spreadTexs[2].rightTex;
-          if (spreadTexs[3]?.leftTex) sheets[2].uniforms.uBackTexture.value = spreadTexs[3].leftTex;
-        }
-        if (sheets[3]) {
-          if (spreadTexs[3]?.rightTex) sheets[3].uniforms.uFrontTexture.value = spreadTexs[3].rightTex;
+        for (let k = 0; k < sheets.length; k++) {
+          if (spreadTexs[k]?.rightTex) {
+            sheets[k].uniforms.uFrontTexture.value = spreadTexs[k].rightTex;
+          }
+          if (spreadTexs[k + 1]?.leftTex) {
+            sheets[k].uniforms.uBackTexture.value = spreadTexs[k + 1].leftTex;
+          }
         }
       });
     }
@@ -760,14 +756,18 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
 
         const active = externalSpreads || loadSavedContent().spreads;
         const pageRight = active[hit.spreadIndex]?.rightPage;
-        const marker = pageRight?.musicMarkers?.[hit.markerHit.markerId] || {
+        const marker = pageRight?.musicMarkers?.[hit.markerHit.markerId];
+        if (marker && marker.enabled === false) return;
+        const resolvedMarker = marker || {
           id: hit.markerHit.markerId,
-          trackId: 'sample_our_evening',
-          title: 'Our Evening ♡',
+          trackId: 'track_remo_first_sight',
+          title: 'Remo — First Sight BGM',
           loop: true,
+          enabled: true,
+          color: '#D32F2F',
         };
 
-        audioPlayer.playMarker(marker, hit.screenPosition);
+        audioPlayer.playMarker(resolvedMarker, hit.screenPosition);
       }
     };
 
@@ -811,20 +811,13 @@ export const ThreePageFlipPrototype = memo(function ThreePageFlipPrototype({
           lBaseMatRef.current.map = spreadTexs[0].leftTex;
           lBaseMatRef.current.needsUpdate = true;
         }
-        if (sheets[0]) {
-          if (spreadTexs[0]?.rightTex) sheets[0].uniforms.uFrontTexture.value = spreadTexs[0].rightTex;
-          if (spreadTexs[1]?.leftTex) sheets[0].uniforms.uBackTexture.value = spreadTexs[1].leftTex;
-        }
-        if (sheets[1]) {
-          if (spreadTexs[1]?.rightTex) sheets[1].uniforms.uFrontTexture.value = spreadTexs[1].rightTex;
-          if (spreadTexs[2]?.leftTex) sheets[1].uniforms.uBackTexture.value = spreadTexs[2].leftTex;
-        }
-        if (sheets[2]) {
-          if (spreadTexs[2]?.rightTex) sheets[2].uniforms.uFrontTexture.value = spreadTexs[2].rightTex;
-          if (spreadTexs[3]?.leftTex) sheets[2].uniforms.uBackTexture.value = spreadTexs[3].leftTex;
-        }
-        if (sheets[3]) {
-          if (spreadTexs[3]?.rightTex) sheets[3].uniforms.uFrontTexture.value = spreadTexs[3].rightTex;
+        for (let k = 0; k < sheets.length; k++) {
+          if (spreadTexs[k]?.rightTex) {
+            sheets[k].uniforms.uFrontTexture.value = spreadTexs[k].rightTex;
+          }
+          if (spreadTexs[k + 1]?.leftTex) {
+            sheets[k].uniforms.uBackTexture.value = spreadTexs[k + 1].leftTex;
+          }
         }
       });
     };

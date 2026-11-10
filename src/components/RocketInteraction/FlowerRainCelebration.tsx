@@ -14,6 +14,13 @@ export interface FlowerRainCelebrationProps {
   className?: string;
 }
 
+/**
+ * CELEBRATION_GIF_URL:
+ * Easily replace this with your uploaded custom GIF path anytime!
+ * (e.g. '/storybook/assets/celebration_appointment.gif' or any asset URL)
+ */
+export const CELEBRATION_GIF_URL: string = '';
+
 interface RainParticle {
   id: number;
   spriteIndex: number;
@@ -45,11 +52,11 @@ export const FlowerRainCelebration = memo(function FlowerRainCelebration({
   const rafRef = useRef<number | null>(null);
   const [showCelebrationCard, setShowCelebrationCard] = useState(false);
 
-  // Fade in celebration card after flower cascade is richly established
+  // Fade in celebration card smoothly as the flower cascade begins
   useEffect(() => {
     const cardTimer = setTimeout(() => {
       setShowCelebrationCard(true);
-    }, 2400);
+    }, 400);
 
     return () => clearTimeout(cardTimer);
   }, []);
@@ -281,14 +288,39 @@ export const FlowerRainCelebration = memo(function FlowerRainCelebration({
         }`}
       >
         <div className={styles.celebrationCard}>
-          <h1 className={styles.celebrationTitle}>SHE SAID YES! ✨</h1>
-          <h3 className={styles.celebrationSubtitle}>Forever Begins Today ❤️</h3>
+          <h1 className={styles.celebrationTitle}>Appointment Confirmed! ❤️</h1>
 
-          <p className={styles.celebrationQuote}>
-            &ldquo;Across every star and every flower,
-            <br />
-            I will cherish you in every lifetime.&rdquo;
+          <p className={styles.celebrationMessage}>
+            Thank you for giving me an appointment during lunch break. 🙏
           </p>
+
+          <p className={styles.celebrationPromise}>
+            I promise I&apos;ll be there! 🥹
+          </p>
+
+          {/* Dedicated Replaceable Celebration GIF Placeholder */}
+          <div className={styles.celebrationGifContainer}>
+            {CELEBRATION_GIF_URL ? (
+              <img
+                src={CELEBRATION_GIF_URL}
+                alt="Appointment Celebration GIF"
+                className={styles.celebrationGif}
+              />
+            ) : (
+              <div
+                className={styles.celebrationGifPlaceholder}
+                title="Dedicated GIF Placeholder: Set CELEBRATION_GIF_URL anytime"
+              >
+                <div className={styles.placeholderIcon} aria-hidden="true">
+                  🎬
+                </div>
+                <span className={styles.placeholderLabel}>GIF Placeholder</span>
+                <span className={styles.placeholderSub}>
+                  Upload your custom celebration GIF anytime
+                </span>
+              </div>
+            )}
+          </div>
 
           <button
             type="button"

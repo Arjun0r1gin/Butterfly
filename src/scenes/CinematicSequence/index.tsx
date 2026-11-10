@@ -24,7 +24,8 @@ import { Butterfly, ButterflyGlitterTrail } from '../../components/Butterfly';
 import { OpeningEnvelope } from '../OpeningEnvelope/OpeningEnvelope';
 import { recordEventIn } from '../../services/tracking/visitorTracking';
 import { STORYBOOK_SPREADS } from '../Storybook/storybookData';
-import { ThreePageFlipPrototype } from '../Storybook/ThreePageFlipPrototype';
+import { ThreePageFlipPrototype, SHEET_COUNT } from '../Storybook/ThreePageFlipPrototype';
+import { BookReadingNote } from '../Storybook/BookReadingNote';
 import { GlobalAtmosphere, type EnvState } from '../../components/Environment/GlobalAtmosphere';
 import { FinalQuestionModal } from '../../components/RocketInteraction/FinalQuestionModal';
 import type { SequenceTimelineState } from '../FlowerTunnel/types';
@@ -478,9 +479,9 @@ export const CinematicSequence = memo(function CinematicSequence({
           setCoverProgress(1.0);
 
           const readProg = Math.max(0, Math.min(1, (p - 0.48) / (0.78 - 0.48)));
-          // Map to 4 physical sheets with comfortable reading pauses between turns
-          const T = readProg * 4.0;
-          const sheetIdx = Math.min(3, Math.floor(T));
+          // Map to physical sheets with comfortable reading pauses between turns
+          const T = readProg * SHEET_COUNT;
+          const sheetIdx = Math.min(SHEET_COUNT - 1, Math.floor(T));
           const sheetU = T - sheetIdx; // in [0, 1]
           let localCurl = 0;
           if (sheetU <= 0.18) {
@@ -493,12 +494,12 @@ export const CinematicSequence = memo(function CinematicSequence({
           const activeTurnT = sheetIdx + localCurl;
           setTurnProgress(activeTurnT);
 
-          const spreadIndex = localCurl >= 0.98 ? Math.min(4, sheetIdx + 1) : sheetIdx;
+          const spreadIndex = localCurl >= 0.98 ? Math.min(SHEET_COUNT, sheetIdx + 1) : sheetIdx;
           if (onSpreadChangeRef.current) onSpreadChangeRef.current(spreadIndex);
         } else {
           // STATE E: Departure toward Rocket (p > 0.78)
           setCoverProgress(1.0);
-          setTurnProgress(4.0);
+          setTurnProgress(SHEET_COUNT);
           const leaveProg = smoothstep(0.78, 0.84, p);
           openStage.style.opacity = (1 - leaveProg).toString();
           openStage.style.pointerEvents = 'none';
@@ -710,6 +711,11 @@ export const CinematicSequence = memo(function CinematicSequence({
             showControls={false}
           />
           <div id="storybook-butterfly-anchor" className={styles.bookButterflyAnchor} />
+          {/* Physical Handwritten Reading Note resting on the book */}
+          <BookReadingNote
+            isOpen={coverProgress >= 0.95}
+            turnProgress={turnProgress}
+          />
         </div>
 
         {/* Layer 3: Opening Flower Tunnel Canvas (Starts immediately when envelope is opened) */}

@@ -21,13 +21,17 @@ async function ensureHandwritingFonts(customFont?: string): Promise<void> {
   if (typeof document !== 'undefined' && document.fonts) {
     try {
       if (customFont) {
+        await document.fonts.load(`600 44px "${customFont}"`);
         await document.fonts.load(`bold 44px "${customFont}"`);
+        await document.fonts.load(`600 36px "${customFont}"`);
         await document.fonts.load(`34px "${customFont}"`);
       }
+      await document.fonts.load('600 44px "Caveat"');
       await document.fonts.load('bold 44px "Caveat"');
-      await document.fonts.load('36px "Caveat"');
-      await document.fonts.load('30px "Patrick Hand"');
-      await document.fonts.load('34px "Kalam"');
+      await document.fonts.load('600 38px "Caveat"');
+      await document.fonts.load('600 32px "Caveat"');
+      await document.fonts.load('600 32px "Patrick Hand"');
+      await document.fonts.load('600 34px "Kalam"');
       await document.fonts.ready;
     } catch {
       // Fallback to system handwriting fonts
@@ -278,6 +282,24 @@ function drawSparkle(ctx: CanvasRenderingContext2D, sx: number, sy: number, size
   ctx.restore();
 }
 
+function adjustHex(hex: string, amount: number): string {
+  try {
+    let color = hex.replace(/^#/, '');
+    if (color.length === 3) color = color.split('').map((c) => c + c).join('');
+    const num = parseInt(color, 16);
+    if (isNaN(num)) return '#D32F2F';
+    let r = (num >> 16) + amount;
+    let g = ((num >> 8) & 0x00ff) + amount;
+    let b = (num & 0x0000ff) + amount;
+    r = Math.min(255, Math.max(0, r));
+    g = Math.min(255, Math.max(0, g));
+    b = Math.min(255, Math.max(0, b));
+    return `#${((r << 16) | (g << 8) | b).toString(16).padStart(6, '0')}`;
+  } catch {
+    return '#D32F2F';
+  }
+}
+
 /**
  * Renders a Right Page (Genuine Handwritten Story, Deep Black Ink, Blush Highlighter, Responsive Typography, Inline Music Badges)
  */
@@ -291,10 +313,7 @@ export async function renderRightPageCanvas(
 
   const typo = page.typography || {};
   const fontFamily = typo.fontFamily || 'Caveat';
-  const fontSize = typo.fontSize || 34;
-  const textColor = typo.color || '#17120F'; // Pure dark black ink
-  const lineHeight = Math.round(fontSize * (typo.lineHeight || 1.55));
-  const paraSpacing = typo.paragraphSpacing !== undefined ? typo.paragraphSpacing : 28;
+  const textColor = typo.color && typo.color !== '#17120F' ? typo.color : '#0a0705'; // Deep black ink
   const textAlign = typo.textAlign || 'left';
 
   await ensureHandwritingFonts(fontFamily);
@@ -314,27 +333,29 @@ export async function renderRightPageCanvas(
   }
 
   ctx.save();
-  const marginX = 135;
-  const contentW = PAGE_CANVAS_W - marginX * 2 - 20;
+  // Expanded text column: 78px clears spiral binder rings, 44px outer margin
+  const marginXLeft = 78;
+  const marginXRight = 44;
+  const contentW = PAGE_CANVAS_W - marginXLeft - marginXRight; // 902px wide
 
-  let curY = 140;
+  let curY = 74;
 
   // 2. Date in Top Right with Pen Underline
   if (page.dateOrLocation) {
     ctx.save();
-    ctx.font = `34px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
+    ctx.font = `600 32px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
     ctx.fillStyle = textColor;
     ctx.textAlign = 'right';
-    const dateX = marginX + contentW;
+    const dateX = marginXLeft + contentW;
     ctx.fillText(page.dateOrLocation, dateX, curY);
 
     // Hand-drawn pen underline
     const dateMetrics = ctx.measureText(page.dateOrLocation);
     ctx.strokeStyle = textColor;
-    ctx.lineWidth = 1.8;
+    ctx.lineWidth = 2.0;
     ctx.beginPath();
-    ctx.moveTo(dateX - dateMetrics.width - 10, curY + 12);
-    ctx.quadraticCurveTo(dateX - dateMetrics.width / 2, curY + 14, dateX + 8, curY + 11);
+    ctx.moveTo(dateX - dateMetrics.width - 8, curY + 9);
+    ctx.quadraticCurveTo(dateX - dateMetrics.width / 2, curY + 11, dateX + 6, curY + 9);
     ctx.stroke();
     ctx.restore();
   }
@@ -347,17 +368,19 @@ export async function renderRightPageCanvas(
     const chapMetrics = ctx.measureText(chapText);
 
     // Soft blush watercolor highlighter wash
-    ctx.fillStyle = 'rgba(235, 160, 175, 0.42)';
+    ctx.fillStyle = 'rgba(235, 160, 175, 0.45)';
     ctx.beginPath();
-    ctx.roundRect(marginX - 10, curY - 26, chapMetrics.width + 24, 30, 6);
+    ctx.roundRect(marginXLeft - 8, curY - 26, chapMetrics.width + 24, 30, 6);
     ctx.fill();
 
     // Deep black ink text
     ctx.fillStyle = textColor;
     ctx.textAlign = 'left';
-    ctx.fillText(chapText, marginX, curY);
+    ctx.fillText(chapText, marginXLeft, curY);
     ctx.restore();
-    curY += 58;
+    curY += 44;
+  } else {
+    curY += 32;
   }
 
   // 4. Chapter Title with Matching Blush Watercolor Wash Streak
@@ -368,29 +391,77 @@ export async function renderRightPageCanvas(
     const titleMetrics = ctx.measureText(titleText);
 
     // Soft blush watercolor highlighter wash
-    ctx.fillStyle = 'rgba(235, 160, 175, 0.42)';
+    ctx.fillStyle = 'rgba(235, 160, 175, 0.45)';
     ctx.beginPath();
-    ctx.roundRect(marginX - 10, curY - 32, titleMetrics.width + 26, 38, 8);
+    ctx.roundRect(marginXLeft - 10, curY - 32, titleMetrics.width + 26, 38, 8);
     ctx.fill();
 
     // Deep black ink title
     ctx.fillStyle = textColor;
     ctx.textAlign = 'left';
-    ctx.fillText(titleText, marginX, curY);
+    ctx.fillText(titleText, marginXLeft, curY);
     ctx.restore();
-    curY += 68;
+    curY += 52;
   }
 
   // 5. Genuine Long-Form Handwritten Story Body with Inline Music Badges
   const storyParagraphs = page.storyParagraphs || [];
+  const maxUsableY = PAGE_CANVAS_H - 45; // 1037px
+  const availableHeight = maxUsableY - curY;
+
+  // Exact Layout Solver: Dynamically find the largest readable font size (25–35% increase)
+  // that fits the paragraphs completely without overflowing, clipping, or overlapping
+  const maxFontSize = 38;
+  const minFontSize = 26;
+  let optimalFont = minFontSize;
+  let optimalLineHeight = Math.round(minFontSize * 1.34);
+  let optimalParaSpacing = 11;
+
+  for (let testFont = maxFontSize; testFont >= minFontSize; testFont -= 1) {
+    const testLineHeight = Math.round(testFont * (typo.lineHeight || 1.34));
+    const testParaSpacing = storyParagraphs.length > 8 ? 10 : (storyParagraphs.length > 5 ? 13 : 16);
+    ctx.font = `600 ${testFont}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
+
+    let totalH = 0;
+    for (const p of storyParagraphs) {
+      if (!p.trim()) continue;
+      const cleanWords = p.replace(/\[\[music:[a-zA-Z0-9_\-]+\]\]/g, ' [♫] ').split(/\s+/);
+      let lineW = 0;
+      let pLines = 1;
+      for (const w of cleanWords) {
+        const ww = ctx.measureText(w + ' ').width;
+        if (lineW + ww > contentW && lineW > 0) {
+          pLines++;
+          lineW = ww;
+        } else {
+          lineW += ww;
+        }
+      }
+      totalH += pLines * testLineHeight + testParaSpacing;
+    }
+    totalH -= testParaSpacing;
+
+    if (page.signature) {
+      totalH += Math.round(testFont * 1.1) + 8;
+    }
+
+    if (totalH <= availableHeight) {
+      optimalFont = testFont;
+      optimalLineHeight = testLineHeight;
+      optimalParaSpacing = testParaSpacing;
+      break;
+    }
+  }
+
+  const fontSize = optimalFont;
+  const lineHeight = optimalLineHeight;
+  const paraSpacing = optimalParaSpacing;
 
   ctx.fillStyle = textColor;
-  ctx.font = `${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
+  ctx.font = `600 ${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'alphabetic';
 
-  // Usable height extends comfortably down the entire page without clipping
-  const maxUsableY = PAGE_CANVAS_H - 85;
   const spaceW = ctx.measureText(' ').width;
 
   interface TokenWord {
@@ -423,7 +494,7 @@ export async function renderRightPageCanvas(
         tokens.push({
           type: 'music',
           markerId,
-          width: 44 + punctWidth,
+          width: 52 + punctWidth,
           trailingPunct,
           punctWidth,
         });
@@ -446,68 +517,85 @@ export async function renderRightPageCanvas(
     const flushLine = () => {
       if (currentLineTokens.length === 0 || curY > maxUsableY) return;
 
-      let startX = marginX;
+      let startX = marginXLeft;
       if (textAlign === 'center') {
-        startX = marginX + (contentW - currentLineWidth) / 2;
+        startX = marginXLeft + (contentW - currentLineWidth) / 2;
       } else if (textAlign === 'right') {
-        startX = marginX + contentW - currentLineWidth;
+        startX = marginXLeft + contentW - currentLineWidth;
       }
 
       let tokenX = startX;
       for (const tok of currentLineTokens) {
         if (tok.type === 'word') {
           ctx.fillStyle = textColor;
-          ctx.font = `${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
+          ctx.font = `600 ${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
           ctx.textAlign = 'left';
           ctx.textBaseline = 'alphabetic';
           ctx.fillText(tok.text, tokenX, curY);
           tokenX += tok.width + spaceW;
         } else if (tok.type === 'music') {
-          const badgeW = 44;
+          const marker = page.musicMarkers?.[tok.markerId];
+          // If disabled, skip rendering the badge entirely
+          if (marker && marker.enabled === false) {
+            if (tok.trailingPunct) {
+              ctx.fillStyle = textColor;
+              ctx.font = `600 ${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
+              ctx.textAlign = 'left';
+              ctx.textBaseline = 'alphabetic';
+              ctx.fillText(tok.trailingPunct, tokenX, curY);
+            }
+            continue;
+          }
+
+          const markerColor = marker?.color || '#D32F2F'; // Default Crimson RED
+          const customRadius = marker?.size ? Math.round(marker.size * 0.75) : Math.max(16, Math.round(fontSize * 0.58));
+          const badgeW = customRadius * 2 + 8;
           const cx = tokenX + badgeW / 2;
           const cy = curY - fontSize * 0.32;
-          const radius = 17;
+          const radius = customRadius;
 
           ctx.save();
-          // Warm golden glow
-          ctx.shadowColor = 'rgba(215, 140, 40, 0.45)';
-          ctx.shadowBlur = 8;
+          // Vibrant red/custom glow
+          ctx.shadowColor = markerColor.startsWith('#')
+            ? `${markerColor}66`
+            : 'rgba(211, 47, 47, 0.45)';
+          ctx.shadowBlur = 10;
           ctx.shadowOffsetX = 1;
           ctx.shadowOffsetY = 2;
 
-          // Radial gradient badge
+          // Radial gradient badge (Crimson Red by default)
           const grad = ctx.createRadialGradient(cx - 3, cy - 3, 2, cx, cy, radius);
-          grad.addColorStop(0, '#fef0bc');
-          grad.addColorStop(0.55, '#f5ba58');
-          grad.addColorStop(1, '#db8a2a');
+          grad.addColorStop(0, adjustHex(markerColor, 55));
+          grad.addColorStop(0.55, markerColor);
+          grad.addColorStop(1, adjustHex(markerColor, -50));
           ctx.fillStyle = grad;
           ctx.beginPath();
           ctx.arc(cx, cy, radius, 0, Math.PI * 2);
           ctx.fill();
 
           // Delicate border
-          ctx.strokeStyle = 'rgba(120, 68, 18, 0.5)';
-          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = adjustHex(markerColor, -80);
+          ctx.lineWidth = 1.4;
           ctx.stroke();
 
-          // Note symbol
+          // Crisp White Note symbol for beautiful contrast
           ctx.shadowColor = 'transparent';
-          ctx.fillStyle = '#17120F';
-          ctx.font = 'bold 20px "Caveat", cursive, sans-serif';
+          ctx.fillStyle = '#ffffff';
+          ctx.font = `bold ${Math.round(radius * 1.2)}px "Caveat", cursive, sans-serif`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.fillText('♫', cx, cy + 1);
 
           // Playful sparkles
-          drawSparkle(ctx, cx + 18, cy - 13, 5);
-          drawSparkle(ctx, cx - 18, cy + 12, 4);
+          drawSparkle(ctx, cx + radius + 2, cy - radius * 0.75, 4.5);
+          drawSparkle(ctx, cx - radius - 2, cy + radius * 0.7, 3.5);
 
           ctx.restore();
 
           // If there is trailing punctuation attached to music note, render it
           if (tok.trailingPunct) {
             ctx.fillStyle = textColor;
-            ctx.font = `${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
+            ctx.font = `600 ${fontSize}px "${fontFamily}", "Caveat", "Patrick Hand", cursive, sans-serif`;
             ctx.textAlign = 'left';
             ctx.textBaseline = 'alphabetic';
             ctx.fillText(tok.trailingPunct, tokenX + badgeW, curY);
@@ -519,7 +607,7 @@ export async function renderRightPageCanvas(
             markerId: tok.markerId,
             cx,
             cy,
-            radius: 22,
+            radius: radius + 8,
           });
 
           tokenX += tok.width + spaceW;
@@ -554,14 +642,14 @@ export async function renderRightPageCanvas(
     ctx.font = `italic ${Math.round(fontSize * 0.95)}px "${fontFamily}", "Caveat", cursive, sans-serif`;
     ctx.textAlign = 'right';
     ctx.fillStyle = textColor;
-    ctx.fillText(page.signature, marginX + contentW, curY + 6);
+    ctx.fillText(page.signature, marginXLeft + contentW, curY + 6);
   } else {
     // Subtle Inked Accent Stroke under text
     ctx.strokeStyle = 'rgba(80, 60, 45, 0.28)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.moveTo(marginX + 60, Math.min(curY, maxUsableY) - 14);
-    ctx.quadraticCurveTo(marginX + 160, Math.min(curY, maxUsableY) - 10, marginX + 260, Math.min(curY, maxUsableY) - 15);
+    ctx.moveTo(marginXLeft + 60, Math.min(curY, maxUsableY) - 14);
+    ctx.quadraticCurveTo(marginXLeft + 160, Math.min(curY, maxUsableY) - 10, marginXLeft + 260, Math.min(curY, maxUsableY) - 15);
     ctx.stroke();
   }
 
@@ -693,6 +781,8 @@ export async function createSpreadCanvasTexture(
   texture.colorSpace = THREE.SRGBColorSpace;
   texture.minFilter = THREE.LinearMipmapLinearFilter;
   texture.magFilter = THREE.LinearFilter;
+  texture.anisotropy = 16;
+  texture.generateMipmaps = true;
   texture.needsUpdate = true;
   return texture;
 }

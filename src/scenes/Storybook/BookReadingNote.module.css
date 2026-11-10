@@ -1,0 +1,169 @@
+/**
+ * BUTTERFLY — Physical Book Reading Note Styles
+ * Renders an authentic physical paper note resting on the book.
+ * No full-screen overlays, modals, or digital popups.
+ */
+
+.noteWrapper {
+  position: absolute;
+  /* Attached to the left page collage area of the open book */
+  top: 14%;
+  left: 6%;
+  z-index: 35;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(20px) scale(0.92);
+  transition:
+    opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.65s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.noteWrapper.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.noteCard {
+  position: relative;
+  width: min(330px, 42vw);
+  background: radial-gradient(
+    circle at 45% 25%,
+    #fdfcf7 0%,
+    #faf4e6 55%,
+    #f4ebd7 100%
+  );
+  border: 1px solid rgba(190, 155, 115, 0.45);
+  border-radius: 8px 12px 10px 14px;
+  box-shadow:
+    0 16px 36px rgba(28, 14, 5, 0.38),
+    0 3px 10px rgba(0, 0, 0, 0.18),
+    inset 0 0 16px rgba(220, 195, 160, 0.25);
+  padding: 30px 22px 20px;
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+  transform: rotate(-2.2deg);
+  transition:
+    transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.28s ease;
+}
+
+.noteCard:hover {
+  transform: rotate(-1.2deg) translateY(-3px) scale(1.02);
+  box-shadow:
+    0 22px 44px rgba(28, 14, 5, 0.45),
+    0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+.noteCard:active {
+  transform: rotate(-2.8deg) translateY(1px) scale(0.98);
+}
+
+/* Translucent Floral Washi Tape Strip at Top */
+.washiTapeStrip {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%) rotate(1deg);
+  width: 95px;
+  height: 25px;
+  background: linear-gradient(
+    135deg,
+    rgba(245, 175, 190, 0.88) 0%,
+    rgba(235, 155, 175, 0.88) 100%
+  );
+  border-radius: 2px;
+  box-shadow: 0 2px 5px rgba(30, 15, 5, 0.18);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  border-left: 1.5px dashed rgba(200, 120, 140, 0.6);
+  border-right: 1.5px dashed rgba(200, 120, 140, 0.6);
+  pointer-events: none;
+}
+
+/* Wax Seal Accent in Top-Right */
+.waxSealAccent {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #e57373 0%, #c62828 70%, #8e0000 100%);
+  border: 1px solid rgba(142, 0, 0, 0.6);
+  box-shadow: 0 2px 6px rgba(198, 40, 40, 0.35);
+  color: #fffaf0;
+  font-family: 'Caveat', cursive, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.noteTextBody {
+  margin-top: 6px;
+}
+
+.noteParagraph {
+  font-family: 'Caveat', 'Patrick Hand', cursive, sans-serif;
+  font-size: clamp(1.15rem, 1.4vw, 1.35rem);
+  font-weight: 600;
+  line-height: 1.42;
+  color: #0a0705;
+  margin: 0 0 10px;
+  text-align: left;
+}
+
+.noteParagraphSecond {
+  font-family: 'Caveat', 'Patrick Hand', cursive, sans-serif;
+  font-size: clamp(1.15rem, 1.4vw, 1.35rem);
+  font-weight: 600;
+  line-height: 1.42;
+  color: #0a0705;
+  margin: 0 0 14px;
+  text-align: left;
+}
+
+.dismissHint {
+  font-family: 'Caveat', cursive, sans-serif;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: #7a6350;
+  text-align: right;
+  letter-spacing: 0.02em;
+  opacity: 0.88;
+}
+
+/* Mobile responsive adaptations */
+@media (max-width: 768px) {
+  .noteWrapper {
+    top: 8%;
+    left: 3%;
+  }
+
+  .noteCard {
+    width: min(240px, 46vw);
+    padding: 20px 14px 12px;
+  }
+
+  .noteParagraph,
+  .noteParagraphSecond {
+    font-size: 0.95rem;
+    line-height: 1.32;
+    margin-bottom: 6px;
+  }
+
+  .dismissHint {
+    font-size: 0.78rem;
+  }
+
+  .washiTapeStrip {
+    width: 68px;
+    height: 18px;
+    top: -9px;
+  }
+}
+

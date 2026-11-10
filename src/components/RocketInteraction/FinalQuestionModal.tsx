@@ -306,7 +306,7 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
               <div className={styles.chapterHeader}>
                 <span className={styles.headerLine} aria-hidden="true" />
                 <span className={styles.headerText}>
-                  {fqContent.chapterHeader}
+                  {fqContent.chapterHeader || 'CHAPTER IV: A SMALL REQUEST'}
                 </span>
                 <span className={styles.headerLine} aria-hidden="true" />
               </div>
@@ -314,17 +314,19 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
               {/* Dynamic Question Title */}
               <h2 className={styles.questionTitle}>
                 <span className={styles.questionTitleMain}>
-                  {fqContent.questionTitleMain}
+                  {fqContent.questionTitleMain || "I know you couldn't become a doctor..."}
                 </span>
                 <span className={styles.questionTitleHighlight}>
-                  {fqContent.questionTitleHighlight}
+                  {fqContent.questionTitleHighlight || 'But could you give me an appointment? 🥹'}
                 </span>
               </h2>
 
-              {/* Subtitle Quote */}
-              <p className={styles.questionSubtitle}>
-                &ldquo;{fqContent.questionSubtitle.replace(/^[“"]|[”"]$/g, '')}&rdquo;
-              </p>
+              {/* Subtitle Quote (Optional) */}
+              {fqContent.questionSubtitle && fqContent.questionSubtitle.trim() ? (
+                <p className={styles.questionSubtitle}>
+                  &ldquo;{fqContent.questionSubtitle.replace(/^[“"]|[”"]$/g, '')}&rdquo;
+                </p>
+              ) : null}
             </div>
 
             {/* Placed Stickers / GIFs on Final Proposal */}
@@ -364,7 +366,7 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
                 onClick={handleYesClick}
                 aria-label="Say Yes"
               >
-                <span>YES</span>
+                <span>YES ❤️</span>
                 <span className={styles.buttonArrow} aria-hidden="true">
                   &rarr;
                 </span>

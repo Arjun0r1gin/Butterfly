@@ -149,13 +149,18 @@ export async function importContentPackage(jsonString: string): Promise<Butterfl
  * Ensures required arrays and properties exist on loaded content
  */
 function sanitizeContent(raw: Partial<ButterflyContent>): ButterflyContent {
-  const isV2 = (raw.version || 0) >= 2;
+  const isV3 = (raw.version || 0) >= 3;
+  const isOldQuestion =
+    !raw.finalQuestion ||
+    raw.finalQuestion.chapterHeader === 'CHAPTER IV: BEYOND THE HORIZON' ||
+    (raw.version || 0) < 4;
   return {
-    version: 2,
+    version: 4,
     lastSaved: raw.lastSaved || Date.now(),
-    spreads: isV2 && Array.isArray(raw.spreads) && raw.spreads.length > 0 ? raw.spreads : DEFAULT_BUTTERFLY_CONTENT.spreads,
-    finalQuestion: raw.finalQuestion || DEFAULT_BUTTERFLY_CONTENT.finalQuestion,
+    spreads: isV3 && Array.isArray(raw.spreads) && raw.spreads.length > 0 ? raw.spreads : DEFAULT_BUTTERFLY_CONTENT.spreads,
+    finalQuestion: isOldQuestion ? DEFAULT_BUTTERFLY_CONTENT.finalQuestion : raw.finalQuestion!,
     mediaAssets: Array.isArray(raw.mediaAssets) ? raw.mediaAssets : [],
+    audioTracks: Array.isArray(raw.audioTracks) ? raw.audioTracks : DEFAULT_BUTTERFLY_CONTENT.audioTracks,
   };
 }
 

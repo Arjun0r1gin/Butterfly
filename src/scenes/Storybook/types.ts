@@ -20,6 +20,9 @@ export interface StickerItem {
   customUrl?: string;
   x: number; // percentage (0 - 100)
   y: number; // percentage (0 - 100)
+  width?: number;
+  height?: number;
+  zIndex?: number;
   rotationDeg: number;
 }
 
@@ -45,6 +48,9 @@ export interface MusicMarker {
   startTime?: number;
   endTime?: number;
   loop?: boolean;
+  enabled?: boolean;
+  color?: string;
+  size?: number;
 }
 
 export interface StoryPageRight {
@@ -55,12 +61,14 @@ export interface StoryPageRight {
   storyParagraphs: string[];
   signature?: string;
   typography?: PageTypography;
+  stickers?: StickerItem[];
   musicMarkers?: Record<string, MusicMarker>;
 }
 
 export interface StorySpread {
   id: string;
   spreadIndex: number;
+  title?: string;
   leftPage: StoryPageLeft;
   rightPage: StoryPageRight;
 }

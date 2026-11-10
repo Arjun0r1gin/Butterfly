@@ -22,30 +22,52 @@ function renderParagraphWithMusic(para: string, markers?: Record<string, MusicMa
 
     const markerId = match[1];
     const punct = match[2] || '';
-    const marker = markers?.[markerId] || {
+    const marker = markers?.[markerId];
+
+    if (marker && marker.enabled === false) {
+      return <React.Fragment key={pIdx}>{punct}</React.Fragment>;
+    }
+
+    const activeMarker: MusicMarker = marker || {
       id: markerId,
-      trackId: 'sample_our_evening',
-      title: 'Our Evening ♡',
+      trackId: 'track_remo_first_sight',
+      title: 'Our Melody ♡',
       loop: true,
+      enabled: true,
+      color: '#D32F2F',
     };
+
+    const customColor = activeMarker.color || '#D32F2F';
+    const customSize = activeMarker.size || 26;
 
     return (
       <React.Fragment key={pIdx}>
         <button
           type="button"
           className={styles.musicNoteBadge}
+          style={{
+            width: `${customSize}px`,
+            height: `${customSize}px`,
+            background: `radial-gradient(circle at 35% 35%, #ff8a80 0%, ${customColor} 60%, #b71c1c 100%)`,
+            boxShadow: `0 2px 6px ${customColor}66, 0 1px 3px rgba(0, 0, 0, 0.15)`,
+          }}
           onClick={(e) => {
             e.stopPropagation();
             const rect = e.currentTarget.getBoundingClientRect();
-            audioPlayer.playMarker(marker, {
+            audioPlayer.playMarker(activeMarker, {
               x: rect.left + rect.width / 2,
               y: rect.top,
             });
           }}
-          title={marker.title || 'Play music'}
-          aria-label={`Play ${marker.title || 'music'}`}
+          title={activeMarker.title || 'Play music'}
+          aria-label={`Play ${activeMarker.title || 'music'}`}
         >
-          <span className={styles.musicNoteIcon}>♫</span>
+          <span
+            className={styles.musicNoteIcon}
+            style={{ fontSize: `${Math.round(customSize * 0.58)}px` }}
+          >
+            ♫
+          </span>
           <span className={styles.sparkleTop}>✧</span>
           <span className={styles.sparkleBottom}>✦</span>
         </button>
@@ -60,11 +82,11 @@ export const RightPageContent = memo(function RightPageContent({
 }: RightPageContentProps) {
   const typo = pageData.typography || {};
   const fontFamily = typo.fontFamily || "'Caveat', 'Patrick Hand', cursive, sans-serif";
-  const fontSize = typo.fontSize ? `${(typo.fontSize / 34) * 1.35}rem` : '1.35rem';
-  const textColor = typo.color || '#17120F';
-  const lineHeight = typo.lineHeight || 1.55;
+  const fontSize = typo.fontSize ? `${(Math.max(38, typo.fontSize) / 34) * 1.55}rem` : '1.55rem';
+  const textColor = typo.color && typo.color !== '#17120F' ? typo.color : '#0a0705';
+  const lineHeight = typo.lineHeight || 1.48;
   const textAlign = typo.textAlign || 'left';
-  const paraGap = typo.paragraphSpacing !== undefined ? `${(typo.paragraphSpacing / 28) * 12}px` : '12px';
+  const paraGap = typo.paragraphSpacing !== undefined ? `${(typo.paragraphSpacing / 28) * 14}px` : '14px';
 
   return (
     <div className={styles.pageInner} data-side="right">

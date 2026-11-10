@@ -88,6 +88,36 @@ export async function getBlobDuration(blob: Blob): Promise<number> {
   });
 }
 
+export const INITIAL_CONFESSION_TRACKS: AudioTrack[] = [
+  {
+    id: 'track_remo_first_sight',
+    name: 'Remo — First Sight BGM',
+    fileName: 'remo_first_sight.mp3',
+    type: 'audio/mpeg',
+    size: 0,
+    duration: 0,
+    createdAt: 1731100000000,
+  },
+  {
+    id: 'track_othadayai_padhayile',
+    name: 'Othadayai Padhayile',
+    fileName: 'othadayai_padhayile.mp3',
+    type: 'audio/mpeg',
+    size: 0,
+    duration: 0,
+    createdAt: 1731100001000,
+  },
+  {
+    id: 'track_thalaivar_bgm',
+    name: 'Rajinikanth / Thalaivar BGM',
+    fileName: 'thalaivar_bgm.mp3',
+    type: 'audio/mpeg',
+    size: 0,
+    duration: 0,
+    createdAt: 1731100002000,
+  },
+];
+
 /**
  * Saves an uploaded audio file/blob to IndexedDB
  */
@@ -142,6 +172,65 @@ export async function saveAudioTrack(
 }
 
 /**
+ * Replaces or uploads an audio file for an existing track ID
+ */
+export async function replaceAudioTrack(
+  id: string,
+  blob: Blob,
+  fileName: string,
+  customName?: string,
+  type?: string
+): Promise<AudioTrack> {
+  const db = await openAudioDB();
+  const cleanType = type || blob.type || 'audio/mpeg';
+  const duration = await getBlobDuration(blob);
+
+  // Check if existing record exists to preserve custom name
+  const existing = await getAudioTrack(id);
+  const name = customName || existing?.name || fileName.replace(/\.[^/.]+$/, '');
+
+  const record: StoredAudioRecord = {
+    id,
+    name,
+    fileName,
+    type: cleanType,
+    size: blob.size,
+    duration,
+    createdAt: existing?.createdAt || Date.now(),
+    blob,
+  };
+
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readwrite');
+    const store = tx.objectStore(STORE_NAME);
+    const req = store.put(record);
+
+    req.onsuccess = () => {
+      if (urlCache.has(id)) {
+        URL.revokeObjectURL(urlCache.get(id)!);
+        urlCache.delete(id);
+      }
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('butterfly_audio_library_updated'));
+      }
+      resolve({
+        id,
+        name,
+        fileName,
+        type: cleanType,
+        size: blob.size,
+        duration,
+        createdAt: record.createdAt,
+      });
+    };
+
+    req.onerror = () => {
+      reject(req.error || new Error(`Failed to replace audio track ${id}`));
+    };
+  });
+}
+
+/**
  * Retrieves all saved audio tracks (metadata only)
  */
 export async function getAllAudioTracks(): Promise<AudioTrack[]> {
@@ -174,9 +263,16 @@ export async function getAllAudioTracks(): Promise<AudioTrack[]> {
           createdAt: r.createdAt,
         }));
 
+        // Include initial configured confession tracks if not yet added by user
+        for (const ct of INITIAL_CONFESSION_TRACKS) {
+          if (!metadataList.some((t) => t.id === ct.id)) {
+            metadataList.push(ct);
+          }
+        }
+
         // Include sample track if not overridden
         if (!metadataList.some((t) => t.id === 'sample_our_evening')) {
-          metadataList.unshift(sampleTrack);
+          metadataList.push(sampleTrack);
         }
 
         resolve(metadataList);
@@ -185,8 +281,8 @@ export async function getAllAudioTracks(): Promise<AudioTrack[]> {
       req.onerror = () => reject(req.error || new Error('Failed to load audio tracks'));
     });
   } catch (err) {
-    console.warn('[audioDB] getAllAudioTracks failed, returning sample', err);
-    return [sampleTrack];
+    console.warn('[audioDB] getAllAudioTracks failed, returning defaults', err);
+    return [...INITIAL_CONFESSION_TRACKS, sampleTrack];
   }
 }
 
@@ -206,31 +302,37 @@ export async function getAudioTrack(id: string): Promise<AudioTrack | null> {
     };
   }
 
-  const db = await openAudioDB();
-  return new Promise((resolve, reject) => {
-    const tx = db.transaction(STORE_NAME, 'readonly');
-    const store = tx.objectStore(STORE_NAME);
-    const req = store.get(id);
+  const initialMatch = INITIAL_CONFESSION_TRACKS.find((t) => t.id === id);
 
-    req.onsuccess = () => {
-      const r = req.result as StoredAudioRecord | undefined;
-      if (!r) {
-        resolve(null);
-        return;
-      }
-      resolve({
-        id: r.id,
-        name: r.name,
-        fileName: r.fileName,
-        type: r.type,
-        size: r.size,
-        duration: r.duration,
-        createdAt: r.createdAt,
-      });
-    };
+  try {
+    const db = await openAudioDB();
+    return new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, 'readonly');
+      const store = tx.objectStore(STORE_NAME);
+      const req = store.get(id);
 
-    req.onerror = () => reject(req.error);
-  });
+      req.onsuccess = () => {
+        const r = req.result as StoredAudioRecord | undefined;
+        if (!r) {
+          resolve(initialMatch || null);
+          return;
+        }
+        resolve({
+          id: r.id,
+          name: r.name,
+          fileName: r.fileName,
+          type: r.type,
+          size: r.size,
+          duration: r.duration,
+          createdAt: r.createdAt,
+        });
+      };
+
+      req.onerror = () => reject(req.error);
+    });
+  } catch {
+    return initialMatch || null;
+  }
 }
 
 /**
