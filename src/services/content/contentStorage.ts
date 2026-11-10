@@ -156,7 +156,16 @@ function sanitizeContent(raw: Partial<ButterflyContent>): ButterflyContent {
     (raw.version || 0) < 5;
   const finalQuestion = isOldQuestion
     ? DEFAULT_BUTTERFLY_CONTENT.finalQuestion
-    : { ...raw.finalQuestion!, stickers: [] };
+    : {
+        ...raw.finalQuestion!,
+        celebrationTitle: (raw.finalQuestion?.celebrationTitle || DEFAULT_BUTTERFLY_CONTENT.finalQuestion.celebrationTitle || 'APPOINTMENT CONFIRMED!')
+          .replace(/❤️|♡/g, '')
+          .trim(),
+        celebrationPromise: (raw.finalQuestion?.celebrationPromise || '').includes('promise')
+          ? ''
+          : (raw.finalQuestion?.celebrationPromise || ''),
+        stickers: [],
+      };
 
   const rawSpreads =
     isV3 && Array.isArray(raw.spreads) && raw.spreads.length > 0

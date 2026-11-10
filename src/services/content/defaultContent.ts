@@ -1188,7 +1188,7 @@ export const DEFAULT_BUTTERFLY_CONTENT: ButterflyContent = {
     "questionTitleHighlight": "But still could you plzz give me an appointment? 🥹🙏",
     "questionSubtitle": "",
     "stickers": [],
-    "celebrationTitle": "APPOINTMENT CONFIRMED! ",
+    "celebrationTitle": "APPOINTMENT CONFIRMED!",
     "celebrationMessage": "Thank you for giving me an appointment during lunch break. 🙏",
     "celebrationPromise": "",
     "celebrationGifUrl": ""
