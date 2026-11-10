@@ -357,7 +357,10 @@ export const FinalQuestionModal = memo(function FinalQuestionModal({
 
       {/* 2. Full-Screen Flower Rain Celebration on YES Click */}
       {isCelebration && (
-        <FlowerRainCelebration onReplay={handleReplayClick} />
+        <FlowerRainCelebration
+          onReplay={handleReplayClick}
+          finalQuestion={fqContent}
+        />
       )}
     </>
   );

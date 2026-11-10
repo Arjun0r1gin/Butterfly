@@ -87,6 +87,11 @@ export interface FinalQuestionContent {
   questionTitleHighlight: string;
   questionSubtitle: string;
   stickers: StickerItem[];
+  celebrationTitle?: string;
+  celebrationMessage?: string;
+  celebrationPromise?: string;
+  celebrationGifUrl?: string;
+  celebrationGifMediaId?: string;
 }
 
 export interface MediaAsset {

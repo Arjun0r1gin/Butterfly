@@ -7,6 +7,11 @@
 import React, { useState, useRef } from 'react';
 import { useButterflyContent } from '../services/content/useButterflyContent';
 import { exportContentPackage, importContentPackage } from '../services/content/contentStorage';
+import {
+  exportProductionZipPackage,
+  publishDirectlyToProject,
+  type PublishResult,
+} from '../services/content/productionPublisher';
 import { Dashboard } from './components/Dashboard';
 import { ScrapbookEditor } from './components/ScrapbookEditor/ScrapbookEditor';
 import { FinalPageEditor } from './components/FinalPageEditor/FinalPageEditor';
@@ -21,6 +26,14 @@ type AdminView = 'dashboard' | 'scrapbook' | 'final' | 'media' | 'audio' | 'trac
 export const AdminApp: React.FC = () => {
   const [activeView, setActiveView] = useState<AdminView>('dashboard');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [isPublishing, setIsPublishing] = useState(false);
+  const [publishStatus, setPublishStatus] = useState<'idle' | 'saving' | 'published' | 'failed'>('idle');
+  const [publishResultModal, setPublishResultModal] = useState<PublishResult | null>(null);
+  const [lastPublishedTime, setLastPublishedTime] = useState<number | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const raw = localStorage.getItem('butterfly_last_published_time');
+    return raw ? parseInt(raw, 10) : null;
+  });
   const importFileRef = useRef<HTMLInputElement>(null);
 
   const {
@@ -29,7 +42,6 @@ export const AdminApp: React.FC = () => {
     save,
     reset,
     hasUnsavedChanges,
-    isSaving,
     lastSaved,
   } = useButterflyContent(true); // Enable draft autosave
 
@@ -43,6 +55,48 @@ export const AdminApp: React.FC = () => {
   const handleManualSave = () => {
     save();
     showToast('✨ All changes saved locally to IndexedDB & LocalStorage!');
+  };
+
+  const handlePublishToProject = async () => {
+    save();
+    setIsPublishing(true);
+    setPublishStatus('saving');
+
+    try {
+      const res = await publishDirectlyToProject(content);
+      setIsPublishing(false);
+      setPublishStatus('published');
+      const now = Date.now();
+      setLastPublishedTime(now);
+      localStorage.setItem('butterfly_last_published_time', now.toString());
+      setPublishResultModal(res);
+      showToast('🚀 Published successfully to project! Ready for GitHub build.');
+    } catch (err: any) {
+      console.error('[AdminApp] Publishing failed', err);
+      setIsPublishing(false);
+      setPublishStatus('failed');
+      showToast(`❌ Publication failed: ${err.message || 'Please check terminal'}`);
+      setPublishResultModal({
+        success: false,
+        timestamp: Date.now(),
+        mediaCount: 0,
+        audioCount: 0,
+        warnings: [],
+        error: err.message || String(err),
+      });
+    }
+  };
+
+  const handleExportProductionZip = async () => {
+    try {
+      save();
+      showToast('⏳ Generating production ZIP archive with all media...');
+      const res = await exportProductionZipPackage(content);
+      showToast(`📦 Downloaded ZIP: ${res.mediaCount} media, ${res.audioCount} songs!`);
+    } catch (err: any) {
+      console.error('[AdminApp] Export ZIP failed', err);
+      showToast('❌ Export ZIP failed. Please check browser console.');
+    }
   };
 
   const handleExport = async () => {
@@ -115,14 +169,32 @@ export const AdminApp: React.FC = () => {
           <div className={styles.statusIndicator}>
             <span
               className={`${styles.statusDot} ${
-                hasUnsavedChanges ? styles.statusDotUnsaved : ''
+                hasUnsavedChanges
+                  ? styles.statusDotUnsaved
+                  : publishStatus === 'saving'
+                  ? styles.statusDotUnsaved
+                  : ''
               }`}
+              style={{
+                background:
+                  publishStatus === 'published'
+                    ? '#4ade80'
+                    : publishStatus === 'failed'
+                    ? '#f87171'
+                    : undefined,
+              }}
             />
             <span>
-              {isSaving
-                ? 'Saving...'
+              {isPublishing
+                ? 'Publishing to Project...'
+                : publishStatus === 'published'
+                ? 'Published to Project ✓'
+                : publishStatus === 'failed'
+                ? 'Publication Failed ✕'
                 : hasUnsavedChanges
                 ? 'Unsaved changes (Draft cached)'
+                : lastPublishedTime
+                ? `Published (${new Date(lastPublishedTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
                 : lastSaved
                 ? `Saved (${new Date(lastSaved).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })})`
                 : 'All changes saved'}
@@ -143,17 +215,37 @@ export const AdminApp: React.FC = () => {
             type="button"
             className={styles.btnSecondary}
             onClick={handleExport}
-            title="Export complete package with all media"
+            title="Export content package JSON"
           >
-            📤 Export
+            📤 Export JSON
+          </button>
+
+          <button
+            type="button"
+            className={styles.btnSecondary}
+            onClick={handleManualSave}
+            title="Save changes to local browser storage"
+          >
+            💾 Save Local
+          </button>
+
+          <button
+            type="button"
+            className={styles.btnSecondary}
+            onClick={handleExportProductionZip}
+            title="Export complete standalone production ZIP with media & songs"
+          >
+            📦 Export ZIP
           </button>
 
           <button
             type="button"
             className={styles.btnPrimary}
-            onClick={handleManualSave}
+            onClick={handlePublishToProject}
+            disabled={isPublishing}
+            title="Transfer edited text, songs, and media directly into project assets"
           >
-            💾 Save Changes
+            {isPublishing ? 'Publishing...' : '🚀 Publish to Project'}
           </button>
 
           <button
@@ -272,7 +364,14 @@ export const AdminApp: React.FC = () => {
         {/* Center Panel */}
         <main className={styles.mainPanel}>
           {activeView === 'dashboard' && (
-            <Dashboard content={content} onNavigate={setActiveView} />
+            <Dashboard
+              content={content}
+              onNavigate={setActiveView}
+              onPublish={handlePublishToProject}
+              onExportZip={handleExportProductionZip}
+              lastPublishedTime={lastPublishedTime}
+              isPublishing={isPublishing}
+            />
           )}
 
           {activeView === 'scrapbook' && (
@@ -294,6 +393,146 @@ export const AdminApp: React.FC = () => {
           {activeView === 'preview' && <LivePreview content={content} />}
         </main>
       </div>
+
+      {/* Publication Results Modal */}
+      {publishResultModal && (
+        <div
+          className={styles.modalBackdrop}
+          onClick={() => setPublishResultModal(null)}
+        >
+          <div
+            className={styles.modalContent}
+            style={{ maxWidth: '640px' }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className={styles.modalHeader}>
+              <h3
+                className={styles.modalTitle}
+                style={{
+                  color: publishResultModal.success ? '#4ade80' : '#f87171',
+                }}
+              >
+                {publishResultModal.success
+                  ? '🚀 Published Successfully to Project!'
+                  : '❌ Publication Failed'}
+              </h3>
+              <button
+                type="button"
+                className={styles.btnSecondary}
+                onClick={() => setPublishResultModal(null)}
+              >
+                ✕ Close
+              </button>
+            </div>
+
+            <div className={styles.modalBody}>
+              {publishResultModal.success ? (
+                <div>
+                  <p style={{ margin: '0 0 16px', color: 'var(--admin-text-main)', fontSize: '0.92rem', lineHeight: 1.5 }}>
+                    Your latest scrapbook changes, handwritten text, audio assignments, and proposal settings have been saved directly to project production files.
+                  </p>
+
+                  <div
+                    style={{
+                      background: 'rgba(30, 22, 16, 0.75)',
+                      border: '1px solid var(--admin-border)',
+                      borderRadius: '10px',
+                      padding: '14px 18px',
+                      marginBottom: '18px',
+                      fontSize: '0.85rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
+                  >
+                    <div>
+                      <strong style={{ color: 'var(--admin-gold-primary)' }}>Updated Spreads: </strong>
+                      {content.spreads.length} physical spreads (8 pages)
+                    </div>
+                    <div>
+                      <strong style={{ color: 'var(--admin-gold-primary)' }}>Media Assets: </strong>
+                      {publishResultModal.mediaCount} files written to <code>public/media/</code>
+                    </div>
+                    <div>
+                      <strong style={{ color: 'var(--admin-gold-primary)' }}>Audio Songs: </strong>
+                      {publishResultModal.audioCount} tracks written to <code>public/audio/</code>
+                    </div>
+                    {publishResultModal.backupPath && (
+                      <div>
+                        <strong style={{ color: 'var(--admin-gold-primary)' }}>Safety Backup: </strong>
+                        <code>{publishResultModal.backupPath}</code>
+                      </div>
+                    )}
+                  </div>
+
+                  {publishResultModal.warnings && publishResultModal.warnings.length > 0 && (
+                    <div
+                      style={{
+                        background: 'rgba(247, 190, 88, 0.12)',
+                        border: '1px solid rgba(247, 190, 88, 0.45)',
+                        borderRadius: '10px',
+                        padding: '12px 16px',
+                        marginBottom: '18px',
+                      }}
+                    >
+                      <strong style={{ color: '#f7be58', fontSize: '0.86rem' }}>
+                        ⚠️ Validation Warnings ({publishResultModal.warnings.length})
+                      </strong>
+                      <ul style={{ margin: '6px 0 0', paddingLeft: '20px', fontSize: '0.80rem', color: 'var(--admin-text-muted)' }}>
+                        {publishResultModal.warnings.map((w, idx) => (
+                          <li key={idx}>
+                            <strong>{w.field}:</strong> {w.message}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '16px' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--admin-gold-bright)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      To Deploy to Live GitHub Pages Website:
+                    </span>
+                    <pre
+                      style={{
+                        background: '#0d0704',
+                        border: '1px solid rgba(229, 189, 117, 0.3)',
+                        borderRadius: '8px',
+                        padding: '12px 16px',
+                        margin: '8px 0 0',
+                        fontSize: '0.82rem',
+                        color: '#fef0d5',
+                        overflowX: 'auto',
+                      }}
+                    >
+{`npm run build
+git add .
+git commit -m "Publish updated scrapbook content and music"
+git push origin main`}
+                    </pre>
+                  </div>
+                </div>
+              ) : (
+                <div style={{ color: '#f87171' }}>
+                  <p style={{ margin: '0 0 12px' }}>
+                    An error occurred while publishing to the project files:
+                  </p>
+                  <pre
+                    style={{
+                      background: '#1a0b0b',
+                      border: '1px solid #7f1d1d',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      fontSize: '0.82rem',
+                    }}
+                  >
+                    {publishResultModal.error || 'Unknown error. Check terminal logs.'}
+                  </pre>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast Notification */}
       {toastMessage && (

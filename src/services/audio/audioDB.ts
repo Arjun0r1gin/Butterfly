@@ -5,6 +5,8 @@
  */
 
 import { assetUrl } from '../../utils/assets';
+import { DEFAULT_BUTTERFLY_CONTENT } from '../content/defaultContent';
+import { loadSavedContent } from '../content/contentStorage';
 
 export interface AudioTrack {
   id: string;
@@ -302,6 +304,15 @@ export async function getAudioTrack(id: string): Promise<AudioTrack | null> {
     };
   }
 
+  // Check published content static tracks first
+  try {
+    const savedContent = typeof window !== 'undefined' ? loadSavedContent() : DEFAULT_BUTTERFLY_CONTENT;
+    const contentTrack = savedContent.audioTracks?.find((t) => t.id === id);
+    if (contentTrack) return contentTrack;
+  } catch {
+    // fallback
+  }
+
   const initialMatch = INITIAL_CONFESSION_TRACKS.find((t) => t.id === id);
 
   try {
@@ -360,6 +371,20 @@ export async function getAudioBlob(id: string): Promise<Blob | null> {
 export async function getAudioUrl(id: string): Promise<string | null> {
   if (id === 'sample_our_evening' || id === 'm_whispering_garden') {
     return assetUrl('/storybook/assets/our_evening_melody.mp3');
+  }
+
+  // Check if track is registered in content with a published static audio path/filename
+  try {
+    const savedContent = typeof window !== 'undefined' ? loadSavedContent() : DEFAULT_BUTTERFLY_CONTENT;
+    const track = savedContent.audioTracks?.find((t) => t.id === id);
+    if (track && track.fileName) {
+      const rawPath = track.fileName.startsWith('/')
+        ? track.fileName
+        : `/audio/${track.fileName}`;
+      return assetUrl(rawPath);
+    }
+  } catch {
+    // fallback
   }
 
   if (urlCache.has(id)) {

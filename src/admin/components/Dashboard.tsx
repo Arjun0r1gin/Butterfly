@@ -11,9 +11,20 @@ import styles from '../Admin.module.css';
 export interface DashboardProps {
   content: ButterflyContent;
   onNavigate: (view: 'dashboard' | 'scrapbook' | 'final' | 'media' | 'audio' | 'tracking' | 'preview') => void;
+  onPublish?: () => void;
+  onExportZip?: () => void;
+  lastPublishedTime?: number | null;
+  isPublishing?: boolean;
 }
 
-export const Dashboard: React.FC<DashboardProps> = ({ content, onNavigate }) => {
+export const Dashboard: React.FC<DashboardProps> = ({
+  content,
+  onNavigate,
+  onPublish,
+  onExportZip,
+  lastPublishedTime,
+  isPublishing = false,
+}) => {
   // Compute metrics
   const totalSpreads = content.spreads.length;
   const totalPages = totalSpreads * 2;
@@ -93,6 +104,75 @@ export const Dashboard: React.FC<DashboardProps> = ({ content, onNavigate }) => 
             {formatLastSaved(content.lastSaved)}
           </span>
           <span className={styles.metricDetail}>Persistent in IndexedDB & LocalStorage</span>
+        </div>
+      </div>
+
+      {/* Production Deployment & Publishing Status Panel */}
+      <div
+        style={{
+          marginTop: '28px',
+          padding: '22px 24px',
+          background: 'radial-gradient(ellipse at 50% 20%, rgba(45, 30, 16, 0.75) 0%, rgba(25, 14, 8, 0.90) 100%)',
+          border: '1.5px solid rgba(229, 189, 117, 0.45)',
+          borderRadius: '16px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          gap: '16px',
+          boxShadow: '0 8px 24px rgba(0, 0, 0, 0.4)',
+        }}
+      >
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '6px' }}>
+            <span style={{ fontSize: '1.2rem' }}>🚀</span>
+            <span style={{ fontFamily: "'Playfair Display', Georgia, serif", fontSize: '1.15rem', fontWeight: 600, color: 'var(--admin-gold-bright)' }}>
+              Production Publishing Workflow
+            </span>
+            <span
+              style={{
+                fontSize: '0.72rem',
+                padding: '3px 9px',
+                borderRadius: '999px',
+                fontWeight: 600,
+                letterSpacing: '0.06em',
+                background: lastPublishedTime ? 'rgba(74, 222, 128, 0.15)' : 'rgba(247, 190, 88, 0.15)',
+                color: lastPublishedTime ? '#4ade80' : '#f7be58',
+                border: `1px solid ${lastPublishedTime ? 'rgba(74, 222, 128, 0.4)' : 'rgba(247, 190, 88, 0.4)'}`,
+              }}
+            >
+              {lastPublishedTime ? 'Published to Project' : 'Ready to Publish'}
+            </span>
+          </div>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--admin-text-muted)', maxWidth: '640px' }}>
+            Transfer edited scrapbook text, uploaded polaroids, GIFs, and songs directly into project assets (<code style={{ color: 'var(--admin-gold-primary)' }}>public/media</code>, <code style={{ color: 'var(--admin-gold-primary)' }}>public/audio</code>).
+            {lastPublishedTime ? ` Last published: ${formatLastSaved(lastPublishedTime)}.` : ' No manual file copying required.'}
+          </p>
+        </div>
+
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+          {onExportZip && (
+            <button
+              type="button"
+              className={styles.btnSecondary}
+              onClick={onExportZip}
+              title="Download standalone production ZIP archive with all assets"
+            >
+              📦 Export ZIP
+            </button>
+          )}
+
+          {onPublish && (
+            <button
+              type="button"
+              className={styles.btnPrimary}
+              onClick={onPublish}
+              disabled={isPublishing}
+              style={{ padding: '10px 22px' }}
+            >
+              {isPublishing ? 'Publishing...' : '🚀 Publish to Project'}
+            </button>
+          )}
         </div>
       </div>
 

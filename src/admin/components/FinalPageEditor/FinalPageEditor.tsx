@@ -207,19 +207,65 @@ export const FinalPageEditor: React.FC<FinalPageEditorProps> = ({
 
           <div style={{ borderTop: '1px solid var(--admin-border)', paddingTop: '16px', marginTop: '8px' }}>
             <span style={{ fontSize: '0.80rem', fontWeight: 600, color: 'var(--admin-gold-primary)' }}>
-              Placed Stickers on Final Screen ({fq.stickers.length})
+              YES Click Celebration Screen
             </span>
             <p style={{ fontSize: '0.78rem', color: 'var(--admin-text-subtle)', margin: '4px 0 12px' }}>
-              Add celebration stickers, hearts, animated sparkle GIFs, or love badges to accompany the proposal.
+              Configure the celebratory card and custom GIF displayed after the visitor clicks YES.
             </p>
-            <button
-              type="button"
-              className={styles.btnSecondary}
-              style={{ width: '100%', justifyContent: 'center' }}
-              onClick={() => setShowMediaPicker(true)}
-            >
-              + Browse Media Library
-            </button>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Celebration Heading</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                value={fq.celebrationTitle || ''}
+                placeholder="APPOINTMENT CONFIRMED! ❤️"
+                onChange={(e) => updateFinalQuestion((prev) => ({ ...prev, celebrationTitle: e.target.value }))}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Celebration Message</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                value={fq.celebrationMessage || ''}
+                placeholder="Thank you for giving me an appointment during lunch break. 🙏"
+                onChange={(e) => updateFinalQuestion((prev) => ({ ...prev, celebrationMessage: e.target.value }))}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Handwritten Promise Line</label>
+              <input
+                type="text"
+                className={styles.formInput}
+                value={fq.celebrationPromise || ''}
+                placeholder="I promise I'll be there! 🥹"
+                onChange={(e) => updateFinalQuestion((prev) => ({ ...prev, celebrationPromise: e.target.value }))}
+              />
+            </div>
+
+            <div className={styles.formGroup}>
+              <label className={styles.formLabel}>Custom Celebration GIF / Image URL</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  type="text"
+                  className={styles.formInput}
+                  value={fq.celebrationGifUrl || ''}
+                  placeholder="e.g. /media/celebration.gif (leave blank for floral fallback)"
+                  onChange={(e) => updateFinalQuestion((prev) => ({ ...prev, celebrationGifUrl: e.target.value }))}
+                />
+                <button
+                  type="button"
+                  className={styles.btnSecondary}
+                  style={{ whiteSpace: 'nowrap' }}
+                  onClick={() => setShowMediaPicker(true)}
+                >
+                  Pick Media
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>

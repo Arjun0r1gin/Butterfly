@@ -8,7 +8,9 @@ __pycache__/
 *.py[cod]
 
 # Backup files
-*.bak# Logs
+*.bak
+backups/
+*.zip# Logs
 logs
 *.log
 npm-debug.log*

@@ -5,6 +5,8 @@
  */
 
 import type { MediaAsset } from './types';
+import { assetUrl } from '../../utils/assets';
+import { DEFAULT_BUTTERFLY_CONTENT } from './defaultContent';
 
 const DB_NAME = 'butterfly_media_db';
 const DB_VERSION = 1;
@@ -130,11 +132,23 @@ export async function getMediaUrl(id: string): Promise<string | null> {
   }
 
   const blob = await getMediaBlob(id);
-  if (!blob) return null;
+  if (blob) {
+    const url = URL.createObjectURL(blob);
+    objectUrlCache.set(id, url);
+    return url;
+  }
 
-  const url = URL.createObjectURL(blob);
-  objectUrlCache.set(id, url);
-  return url;
+  // Fallback to static published media asset if present
+  try {
+    const staticAsset = DEFAULT_BUTTERFLY_CONTENT.mediaAssets?.find((a) => a.id === id);
+    if (staticAsset && (staticAsset as any).customUrl) {
+      return assetUrl((staticAsset as any).customUrl);
+    }
+  } catch {
+    // ignore
+  }
+
+  return null;
 }
 
 /**

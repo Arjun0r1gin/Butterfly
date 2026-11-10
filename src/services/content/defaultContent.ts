@@ -845,6 +845,10 @@ export const DEFAULT_BUTTERFLY_CONTENT: ButterflyContent = {
     questionTitleHighlight: 'But could you give me an appointment? 🥹',
     questionSubtitle: '',
     stickers: [],
+    celebrationTitle: 'APPOINTMENT CONFIRMED! ❤️',
+    celebrationMessage: 'Thank you for giving me an appointment during lunch break. 🙏',
+    celebrationPromise: "I promise I'll be there! 🥹",
+    celebrationGifUrl: '',
   },
   mediaAssets: [],
   audioTracks: [

@@ -7,10 +7,12 @@
 
 import { memo, useEffect, useRef, useState, useCallback } from 'react';
 import { FlowerAssetCache, type LoadedFlowerSprite } from '../../scenes/FlowerTunnel/flowerRegistry';
+import type { FinalQuestionContent } from '../../services/content/types';
 import styles from './FinalQuestionModal.module.css';
 
 export interface FlowerRainCelebrationProps {
   onReplay: () => void;
+  finalQuestion?: FinalQuestionContent;
   className?: string;
 }
 
@@ -46,11 +48,20 @@ interface RainParticle {
 
 export const FlowerRainCelebration = memo(function FlowerRainCelebration({
   onReplay,
+  finalQuestion,
   className = '',
 }: FlowerRainCelebrationProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const [showCelebrationCard, setShowCelebrationCard] = useState(false);
+
+  const celebrationTitle = finalQuestion?.celebrationTitle || 'APPOINTMENT CONFIRMED! ❤️';
+  const celebrationMessage =
+    finalQuestion?.celebrationMessage ||
+    'Thank you for giving me an appointment during lunch break. 🙏';
+  const celebrationPromise =
+    finalQuestion?.celebrationPromise || "I promise I'll be there! 🥹";
+  const celebrationGifUrl = finalQuestion?.celebrationGifUrl || CELEBRATION_GIF_URL;
 
   // Fade in celebration card smoothly as the flower cascade begins
   useEffect(() => {
@@ -299,21 +310,17 @@ export const FlowerRainCelebration = memo(function FlowerRainCelebration({
             <span>★ APPOINTMENT SEALED ★</span>
           </div>
 
-          <h1 className={styles.celebrationTitle}>APPOINTMENT CONFIRMED! ❤️</h1>
+          <h1 className={styles.celebrationTitle}>{celebrationTitle}</h1>
 
-          <p className={styles.celebrationMessage}>
-            Thank you for giving me an appointment during lunch break. 🙏
-          </p>
+          <p className={styles.celebrationMessage}>{celebrationMessage}</p>
 
-          <p className={styles.celebrationPromise}>
-            I promise I&apos;ll be there! 🥹
-          </p>
+          <p className={styles.celebrationPromise}>{celebrationPromise}</p>
 
           {/* Dedicated Replaceable Celebration GIF / Floral Fallback */}
           <div className={styles.celebrationGifContainer}>
-            {CELEBRATION_GIF_URL ? (
+            {celebrationGifUrl ? (
               <img
-                src={CELEBRATION_GIF_URL}
+                src={celebrationGifUrl}
                 alt="Appointment Celebration GIF"
                 className={styles.celebrationGif}
               />
